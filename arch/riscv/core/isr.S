@@ -234,7 +234,8 @@ GTEXT(__soc_restore_context)
 
 GTEXT(_k_neg_eagain)
 GTEXT(_is_next_thread_current)
-GTEXT(z_get_next_ready_thread)
+GTEXT(z_get_next_switch_handle)
+// TODO Do I really need to import z_get_next_switch_handle here?
 
 #ifdef CONFIG_INSTRUMENT_THREAD_SWITCHING
 GTEXT(z_thread_mark_switched_in)
@@ -300,24 +301,10 @@ SECTION_FUNC(exception.entry, __irq_wrapper)
 
 	/*
 	 * Save caller-saved registers on current thread stack.
-	 * NOTE: need to be updated to account for floating-point registers
-	 * floating-point registers should be accounted for when corresponding
-	 * config variable is set
+	 * NOTE: floating point registers are saved once we figure out
+	 * if we are serving an IRQ or ECALL.
 	 */
 	STORE_CALLER_SAVED()
-
-#if defined(CONFIG_FPU) && defined(CONFIG_FPU_SHARING)
-	/* Assess whether floating-point registers need to be saved. */
-	GET_CPU(t0, t1)
-	RV_OP_LOADREG t0, ___cpu_t_current_OFFSET(t0)
-	RV_OP_LOADREG t0, _thread_offset_to_user_options(t0)
-	andi t0, t0, K_FP_REGS
-	RV_OP_STOREREG t0, __z_arch_esf_t_fp_state_OFFSET(sp)
-	beqz t0, skip_store_fp_caller_saved
-	STORE_FP_CALLER_SAVED(sp)
-
-skip_store_fp_caller_saved:
-#endif /* CONFIG_FPU && CONFIG_FPU_SHARING */
 
 	/* Save MEPC register */
 	csrr t0, mepc
@@ -386,6 +373,21 @@ is_priv_sp:
 	/* If a0 != 0, jump to is_interrupt */
 	addi t1, x0, 0
 	bnez a0, is_interrupt
+
+#if defined(CONFIG_FPU) && defined(CONFIG_FPU_SHARING)
+	/* Assess whether floating-point registers need to be saved. Current
+	 thread is given by container_of(switched_from) */
+	RV_OP_LOADREG a1, __z_arch_esf_t_a1_OFFSET(sp)
+	addi t0, a1, -___thread_t_switch_handle_OFFSET
+
+	RV_OP_LOADREG t0, _thread_offset_to_user_options(t0)
+	andi t0, t0, K_FP_REGS
+	RV_OP_STOREREG t0, __z_arch_esf_t_fp_state_OFFSET(sp)
+	beqz t0, skip_store_fp_caller_saved
+	STORE_FP_CALLER_SAVED(sp)
+#endif /* CONFIG_FPU && CONFIG_FPU_SHARING */
+
+skip_store_fp_caller_saved:
 
 #ifdef CONFIG_USERSPACE
 	/* Reset IRQ flag */
@@ -469,7 +471,7 @@ not_user_syscall:
 	/*
 	 * Determine if the system call is the result of an IRQ offloading.
 	 * Done by checking if _offload_routine is not pointing to NULL.
-	 * If NULL, jump to reschedule to perform a context-switch, otherwise,
+	 * If NULL, jump to riscv_switch to perform a context-switch, otherwise,
 	 * jump to is_interrupt to handle the IRQ offload.
 	 */
 	la t0, _offload_routine
@@ -501,16 +503,16 @@ skip_fp_move_kernel_syscall:
 #ifdef CONFIG_USERSPACE
 	/*
 	 * Check for forced syscall,
-	 * otherwise go to reschedule to handle context-switch
+	 * otherwise go to riscv_switch to handle context-switch
 	 */
 	li t0, FORCE_SYSCALL_ID
-	bne a7, t0, reschedule
+	bne a7, t0, riscv_switch
 
 	RV_OP_LOADREG a0, __z_arch_esf_t_a0_OFFSET(sp)
 
 	/* Check for user_mode_enter function */
 	la t0, arch_user_mode_enter
-	bne t0, a0, reschedule
+	bne t0, a0, riscv_switch
 
 	RV_OP_LOADREG a0, __z_arch_esf_t_a1_OFFSET(sp)
 	RV_OP_LOADREG a1, __z_arch_esf_t_a2_OFFSET(sp)
@@ -525,9 +527,14 @@ skip_fp_move_kernel_syscall:
 	j z_riscv_user_mode_enter_syscall
 #endif /* CONFIG_USERSPACE */
 	/*
-	 * Go to reschedule to handle context-switch
+	 * Fall through riscv_switch to handle context-switch.
 	 */
-	j reschedule
+
+riscv_switch:
+	RV_OP_LOADREG a0, __z_arch_esf_t_a0_OFFSET(sp)
+	RV_OP_LOADREG a1, __z_arch_esf_t_a1_OFFSET(sp)
+	addi t1, a1, -___thread_t_switch_handle_OFFSET
+	j do_switch
 
 #ifdef CONFIG_USERSPACE
 is_user_syscall:
@@ -648,6 +655,18 @@ skip_fp_copy_return_user_syscall:
 #endif /* CONFIG_USERSPACE */
 
 is_interrupt:
+#if defined(CONFIG_FPU) && defined(CONFIG_FPU_SHARING)
+	/* Assess whether floating-point registers need to be saved. */
+	GET_CPU(t0, t1)
+	RV_OP_LOADREG t0, ___cpu_t_current_OFFSET(t0)
+	RV_OP_LOADREG t0, _thread_offset_to_user_options(t0)
+	andi t0, t0, K_FP_REGS
+	RV_OP_STOREREG t0, __z_arch_esf_t_fp_state_OFFSET(sp)
+	beqz t0, skip_store_fp_caller_saved_int
+	STORE_FP_CALLER_SAVED(sp)
+skip_store_fp_caller_saved_int:
+#endif /* CONFIG_FPU && CONFIG_FPU_SHARING */
+
 #ifdef CONFIG_USERSPACE
 	la t0, irq_flag
 	li t2, 0x1
@@ -749,28 +768,10 @@ on_thread_stack:
 
 #ifdef CONFIG_STACK_SENTINEL
 	call z_check_stack_sentinel
-	GET_CPU(t1, t2)
 #endif
 
-#ifdef CONFIG_PREEMPT_ENABLED
-	/*
-	 * Check if we need to perform a reschedule
-	 */
-
-	/* Get pointer to _current_cpu.current */
-	RV_OP_LOADREG t2, ___cpu_t_current_OFFSET(t1)
-
-	/*
-	 * Check if next thread to schedule is current thread.
-	 * If yes do not perform a reschedule
-	 */
-	RV_OP_LOADREG t3, _kernel_offset_to_ready_q_cache(t1)
-	beq t3, t2, no_reschedule
-#else
-	j no_reschedule
-#endif /* CONFIG_PREEMPT_ENABLED */
-
 #ifdef CONFIG_PMP_STACK_GUARD
+	GET_CPU(t1, t2)
 	RV_OP_LOADREG a0, ___cpu_t_current_OFFSET(t1)
 	jal ra, z_riscv_configure_stack_guard
 
@@ -802,6 +803,8 @@ skip_fp_move_irq:
 	 * Switch to privilege stack because we want
 	 * this starting point after reschedule.
 	 */
+	GET_CPU(t1, t2)
+	RV_OP_LOADREG t2, ___cpu_t_current_OFFSET(t1)
 	RV_OP_LOADREG t3, _thread_offset_to_priv_stack_start(t2)
 	RV_OP_STOREREG sp, _thread_offset_to_user_sp(t2) /* Save user SP */
 	mv t0, sp
@@ -817,27 +820,41 @@ skip_fp_move_irq:
 #endif /* CONFIG_USERSPACE */
 
 reschedule:
-	/*
-	 * Check if the current thread is the same as the thread on the ready Q. If
-	 * so, do not reschedule.
-	 * Note:
-	 *   Sometimes this code is execute back-to-back before the target thread
-	 *   has a chance to run. If this happens, the current thread and the
-	 *   target thread will be the same.
-	 */
+	/* Get next thread to run and switch to it - or not, if the same */
 	GET_CPU(t0, t1)
-	RV_OP_LOADREG t2, ___cpu_t_current_OFFSET(t0)
-	RV_OP_LOADREG t3, _kernel_offset_to_ready_q_cache(t0)
-	beq t2, t3, no_reschedule
-
-#if CONFIG_INSTRUMENT_THREAD_SWITCHING
-	call z_thread_mark_switched_out
-#endif
-	/* Get reference to current CPU */
-	GET_CPU(t0, t1)
-
-	/* Get pointer to current thread */
 	RV_OP_LOADREG t1, ___cpu_t_current_OFFSET(t0)
+	mv a0, t1
+
+	addi sp, sp, -16
+	RV_OP_STOREREG t1, 0x00(sp)
+
+	call z_get_next_switch_handle
+
+	RV_OP_LOADREG t1, 0x00(sp)
+	addi sp, sp, 16
+
+	beq a0, t1, no_reschedule
+	mv a1, x0
+
+do_switch:
+	/* Expectations:
+	 * a0: handle for next thread
+	 * a1: address of handle for outgoing thread or 0, if not handling arch_switch
+	 * t1: k_thread for outgoing thread
+	 */
+#if CONFIG_INSTRUMENT_THREAD_SWITCHING
+	addi sp, sp, -32
+	RV_OP_STOREREG a0, 0x00(sp)
+	RV_OP_STOREREG a1, 0x08(sp)
+	RV_OP_STOREREG t1, 0x10(sp)
+
+	call z_thread_mark_switched_out
+
+	RV_OP_LOADREG a0, 0x00(sp)
+	RV_OP_LOADREG a1, 0x08(sp)
+	RV_OP_LOADREG t1, 0x10(sp)
+	addi sp, sp, 32
+#endif
 
 #ifdef CONFIG_USERSPACE
 	/*
@@ -877,21 +894,26 @@ skip_callee_saved_reg:
 
 #endif /* CONFIG_PMP_STACK_GUARD */
 
-	/*
-	 * Save stack pointer of current thread and set the default return value
-	 * of z_swap to _k_neg_eagain for the thread.
-	 */
+	/* Save stack pointer of current thread. */
 	RV_OP_STOREREG sp, _thread_offset_to_sp(t1)
-	la t2, _k_neg_eagain
-	lw t3, 0x00(t2)
-	sw t3, _thread_offset_to_swap_return_value(t1)
-
-	/* Get next thread to schedule. */
-	RV_OP_LOADREG t1, _kernel_offset_to_ready_q_cache(t0)
 
 	/*
-	 * Set _current_cpu.current to new thread loaded in t1
+	 * Current thread is saved. If a1 != 0, we're coming from riscv_switch
+	 * and need to update switched_from, as it's a synchronization signal
+	 * that old thread is saved.
 	 */
+	beqz a1, skip_save_switched_from
+	addi t2, a1, -___thread_t_switch_handle_OFFSET
+	//bne t1, t2, halt
+	RV_OP_STOREREG t2, 0x00(a1)
+
+skip_save_switched_from:
+	/*
+	 * At this point, a0 contains the new thread. Set
+	 * _current_cpu.current to it.
+	 */
+	GET_CPU(t0, t1)
+	mv t1, a0
 	RV_OP_STOREREG t1, ___cpu_t_current_OFFSET(t0)
 
 	/* Switch to new thread stack */
