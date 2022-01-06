@@ -151,7 +151,7 @@ config TEST_EXTRA_STACKSIZE
 	default 1024
 
 config CMSIS_THREAD_MAX_STACK_SIZE
-	default 1024 if 64BIT
+	default 1024
 
 config CMSIS_V2_THREAD_MAX_STACK_SIZE
 	default 1024 if 64BIT
