@@ -6,11 +6,11 @@ tests:
       - CONFIG_DYNAMIC_INTERRUPTS=y
     tags: fpu kernel userspace
   kernel.fpu_sharing.float_disable.riscv32:
-    filter: CONFIG_CPU_HAS_FPU
+    filter: CONFIG_CPU_HAS_FPU and not CONFIG_SMP
     arch_allow: riscv32
     tags: fpu kernel userspace
   kernel.fpu_sharing.float_disable.riscv64:
-    filter: CONFIG_CPU_HAS_FPU
+    filter: CONFIG_CPU_HAS_FPU and not CONFIG_SMP
     arch_allow: riscv64
     tags: fpu kernel userspace
   kernel.fpu_sharing.float_disable.sparc:
