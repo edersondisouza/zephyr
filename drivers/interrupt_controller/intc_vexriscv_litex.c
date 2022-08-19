@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT litex_eth0
+#define DT_DRV_COMPAT litex_gpio
 
 #include <zephyr/kernel.h>
 #include <zephyr/arch/cpu.h>
@@ -99,10 +99,17 @@ static void vexriscv_litex_irq_handler(const void *device)
 	}
 #endif
 
-	if (irqs & (1 << GPIO_IRQ)) {
-		ite = &_sw_isr_table[GPIO_IRQ];
-		ite->isr(ite->arg);
+#define DO_HANDLE_IRQ(inst) \
+	if (irqs & BIT(DT_INST_IRQN(inst))) { \
+		ite = &_sw_isr_table[DT_INST_IRQN(inst)]; \
+		ite->isr(ite->arg); \
 	}
+
+#define HANDLE_GPIO_IRQ(inst) \
+	COND_CODE_0(DT_INST_PROP(inst, port_is_output), \
+		(DO_HANDLE_IRQ(inst)), (;));
+
+	DT_INST_FOREACH_STATUS_OKAY(HANDLE_GPIO_IRQ);
 }
 
 void arch_irq_enable(unsigned int irq)
