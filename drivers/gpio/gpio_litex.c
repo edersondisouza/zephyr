@@ -192,9 +192,9 @@ static void gpio_litex_irq_handler(const struct device *dev)
 	const struct gpio_litex_cfg *gpio_config = DEV_GPIO_CFG(dev);
 	struct gpio_litex_data *data = dev->data;
 
-	uint8_t int_status =
+	uint32_t int_status =
 		litex_read(gpio_config->ev_pending_addr, gpio_config->reg_size);
-	uint8_t ev_enabled =
+	uint32_t ev_enabled =
 		litex_read(gpio_config->ev_enable_addr, gpio_config->reg_size);
 
 	/* clear events */
@@ -224,12 +224,12 @@ static int gpio_litex_pin_interrupt_configure(const struct device *dev,
 	}
 
 	if (mode == GPIO_INT_MODE_EDGE) {
-		uint8_t ev_enabled = litex_read(gpio_config->ev_enable_addr,
-				gpio_config->reg_size);
-		uint8_t ev_mode = litex_read(gpio_config->ev_mode_addr,
-				gpio_config->reg_size);
-		uint8_t ev_edge = litex_read(gpio_config->ev_edge_addr,
-				gpio_config->reg_size);
+		uint32_t ev_enabled = litex_read(gpio_config->ev_enable_addr,
+						 gpio_config->reg_size);
+		uint32_t ev_mode = litex_read(gpio_config->ev_mode_addr,
+					      gpio_config->reg_size);
+		uint32_t ev_edge = litex_read(gpio_config->ev_edge_addr,
+					      gpio_config->reg_size);
 
 		litex_write(gpio_config->ev_enable_addr, gpio_config->reg_size,
 			    ev_enabled | BIT(pin));
