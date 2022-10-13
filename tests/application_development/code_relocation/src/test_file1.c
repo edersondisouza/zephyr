@@ -39,6 +39,8 @@ ZTEST(code_relocation, test_function_in_sram2)
 	extern uintptr_t __custom_section_end;
 
 	/* Print values from sram2 */
+	printk("Address of __sram2_text_start %p\n", &__sram2_text_start);
+	printk("Address of __sram2_text_end %p\n", &__sram2_text_end);
 	printk("Address of var_sram2_data %p\n", &var_sram2_data);
 	printk("Address of k_sem_give %p\n", &k_sem_give);
 	printk("Address of var_sram2_rodata %p\n", &var_sram2_rodata);

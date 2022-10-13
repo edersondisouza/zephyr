@@ -188,6 +188,9 @@ def find_sections(filename, full_list_of_sections):
             if ".bss." in section.name:
                 full_list_of_sections["bss"].append(section.name)
 
+            if ".literal." in section.name:
+                full_list_of_sections["literal"].append(section.name)
+
             # Common variables will be placed in the .bss section
             # only after linking in the final executable. This "if" finds
             # common symbols and warns the user of the problem.
@@ -200,13 +203,15 @@ def find_sections(filename, full_list_of_sections):
                         warnings.warn("Common variable found. Move "+
                                       symbol.name + " to bss by assigning it to 0/NULL")
 
+    print("#####", full_list_of_sections)
+
     return full_list_of_sections
 
 
 def assign_to_correct_mem_region(memory_type,
                                  full_list_of_sections, complete_list_of_sections):
     all_regions = False
-    iteration_sections = {"text": False, "rodata": False, "data": False, "bss": False}
+    iteration_sections = {"text": False, "rodata": False, "data": False, "bss": False, "literal": False}
     if "_TEXT" in memory_type:
         iteration_sections["text"] = True
         memory_type = memory_type.replace("_TEXT", "")
@@ -219,8 +224,11 @@ def assign_to_correct_mem_region(memory_type,
     if "_BSS" in memory_type:
         iteration_sections["bss"] = True
         memory_type = memory_type.replace("_BSS", "")
+    if "_LITERAL" in memory_type:
+        iteration_sections["literal"] = True
+        memory_type = memory_type.replace("_LITERAL", "")
     if not (iteration_sections["data"] or iteration_sections["bss"] or
-            iteration_sections["text"] or iteration_sections["rodata"]):
+            iteration_sections["text"] or iteration_sections["rodata"] or iteration_sections["literal"]):
         all_regions = True
 
     pos = memory_type.find('_')
@@ -230,7 +238,7 @@ def assign_to_correct_mem_region(memory_type,
         mpu_align[memory_type] = align_size
 
     if memory_type in complete_list_of_sections:
-        for iter_sec in ["text", "rodata", "data", "bss"]:
+        for iter_sec in ["text", "rodata", "data", "bss", "literal"]:
             if ((iteration_sections[iter_sec] or all_regions) and
                     full_list_of_sections[iter_sec] != []):
                 complete_list_of_sections[memory_type][iter_sec] += (
@@ -238,8 +246,8 @@ def assign_to_correct_mem_region(memory_type,
     else:
         # new memory type was found. in which case just assign the
         # full_list_of_sections to the memorytype dict
-        tmp_list = {"text": [], "rodata": [], "data": [], "bss": []}
-        for iter_sec in ["text", "rodata", "data", "bss"]:
+        tmp_list = {"text": [], "rodata": [], "data": [], "bss": [], "literal": []}
+        for iter_sec in ["text", "rodata", "data", "bss", "literal"]:
             if ((iteration_sections[iter_sec] or all_regions) and
                     full_list_of_sections[iter_sec] != []):
                 tmp_list[iter_sec] = full_list_of_sections[iter_sec]
@@ -255,17 +263,19 @@ def print_linker_sections(list_sections):
         print_string += PRINT_TEMPLATE.format(section)
     return print_string
 
+def add_phdr(memory_type, phdrs):
+    return f'{memory_type} {phdrs[memory_type] if memory_type in phdrs else ""}'
 
 def string_create_helper(region, memory_type,
-                         full_list_of_sections, load_address_in_flash, is_copy):
+                         full_list_of_sections, load_address_in_flash, is_copy, phdrs):
     linker_string = ''
     if load_address_in_flash:
         if is_copy:
-            load_address_string = LOAD_ADDRESS_LOCATION_FLASH.format(memory_type)
+            load_address_string = LOAD_ADDRESS_LOCATION_FLASH.format(add_phdr(memory_type, phdrs))
         else:
-            load_address_string = LOAD_ADDRESS_LOCATION_FLASH_NOCOPY.format(memory_type)
+            load_address_string = LOAD_ADDRESS_LOCATION_FLASH_NOCOPY.format(add_phdr(memory_type, phdrs))
     else:
-        load_address_string = LOAD_ADDRESS_LOCATION_BSS.format(memory_type)
+        load_address_string = LOAD_ADDRESS_LOCATION_BSS.format(add_phdr(memory_type, phdrs))
     if full_list_of_sections[region]:
         # Create a complete list of funcs/ variables that goes in for this
         # memory type
@@ -281,7 +291,7 @@ def string_create_helper(region, memory_type,
                 linker_string += LINKER_SECTION_SEQ_MPU.format(memory_type.lower(), region, memory_type.upper(),
                                                                region.upper(), tmp, load_address_string, align_size)
             else:
-                if region_is_default_ram(memory_type) and region == 'text':
+                if region_is_default_ram(memory_type) and (region == 'text' or region == 'literal'):
                     align_size = 0
                     linker_string += LINKER_SECTION_SEQ_MPU.format(memory_type.lower(), region, memory_type.upper(),
                                                                    region.upper(), tmp, load_address_string, align_size)
@@ -294,7 +304,8 @@ def string_create_helper(region, memory_type,
     return linker_string
 
 
-def generate_linker_script(linker_file, sram_data_linker_file, sram_bss_linker_file, complete_list_of_sections):
+def generate_linker_script(linker_file, sram_data_linker_file, sram_bss_linker_file,
+                           complete_list_of_sections, phdrs):
     gen_string = ''
     gen_string_sram_data = ''
     gen_string_sram_bss = ''
@@ -308,18 +319,19 @@ def generate_linker_script(linker_file, sram_data_linker_file, sram_bss_linker_f
         if region_is_default_ram(memory_type) and is_copy:
             gen_string += MPU_RO_REGION_START.format(memory_type.lower(), memory_type.upper())
 
-        gen_string += string_create_helper("text", memory_type, full_list_of_sections, 1, is_copy)
-        gen_string += string_create_helper("rodata", memory_type, full_list_of_sections, 1, is_copy)
+        gen_string += string_create_helper("literal", memory_type, full_list_of_sections, 1, is_copy, phdrs)
+        gen_string += string_create_helper("text", memory_type, full_list_of_sections, 1, is_copy, phdrs)
+        gen_string += string_create_helper("rodata", memory_type, full_list_of_sections, 1, is_copy, phdrs)
 
         if region_is_default_ram(memory_type) and is_copy:
             gen_string += MPU_RO_REGION_END.format(memory_type.lower())
 
         if region_is_default_ram(memory_type):
-            gen_string_sram_data += string_create_helper("data", memory_type, full_list_of_sections, 1, 1)
-            gen_string_sram_bss += string_create_helper("bss", memory_type, full_list_of_sections, 0, 1)
+            gen_string_sram_data += string_create_helper("data", memory_type, full_list_of_sections, 1, 1, phdrs)
+            gen_string_sram_bss += string_create_helper("bss", memory_type, full_list_of_sections, 0, 1, phdrs)
         else:
-            gen_string += string_create_helper("data", memory_type, full_list_of_sections, 1, 1)
-            gen_string += string_create_helper("bss", memory_type, full_list_of_sections, 0, 1)
+            gen_string += string_create_helper("data", memory_type, full_list_of_sections, 1, 1, phdrs)
+            gen_string += string_create_helper("bss", memory_type, full_list_of_sections, 0, 1, phdrs)
 
     # finally writing to the linker file
     with open(linker_file, "w") as file_desc:
@@ -424,16 +436,29 @@ def get_obj_filename(searchpath, filename):
 
 
 # Create a dict with key as memory type and files as a list of values.
+# Also, return another dict with program headers for memory regions
 def create_dict_wrt_mem():
     # need to support wild card *
     rel_dict = dict()
+    phdrs = dict()
+    print(">>>>", args.input_rel_dict)
     if args.input_rel_dict == '':
         sys.exit("Disable CONFIG_CODE_DATA_RELOCATION if no file needs relocation")
     for line in args.input_rel_dict.split(';'):
         if ':' not in line:
             continue
 
-        mem_region, copy_flag, file_name = line.split(':', 2)
+        # TODO, this will break on windows, if filename has the 'c:\'
+        mem_region, copy_flag, file_name = line.rsplit(':', 2)
+
+        # Handle any program header
+        if '\ :' in mem_region:
+            mem_region, phdr = mem_region.split('\ :', 2)
+            phdrs[mem_region] = f':{phdr}'
+
+        # And any stray space at the end
+        if '\ ' in mem_region:
+            mem_region = mem_region[:-2]
 
         file_name_list = glob.glob(file_name)
         if not file_name_list:
@@ -451,7 +476,7 @@ def create_dict_wrt_mem():
         else:
             rel_dict[mem_region] = file_name_list
 
-    return rel_dict
+    return rel_dict, phdrs
 
 
 def main():
@@ -462,7 +487,7 @@ def main():
     linker_file = args.output
     sram_data_linker_file = args.output_sram_data
     sram_bss_linker_file = args.output_sram_bss
-    rel_dict = create_dict_wrt_mem()
+    rel_dict, phdrs = create_dict_wrt_mem()
     complete_list_of_sections = {}
 
     # Create/or truncate file contents if it already exists
@@ -470,7 +495,7 @@ def main():
 
     # for each memory_type, create text/rodata/data/bss sections for all obj files
     for memory_type, files in rel_dict.items():
-        full_list_of_sections = {"text": [], "rodata": [], "data": [], "bss": []}
+        full_list_of_sections = {"text": [], "rodata": [], "data": [], "bss": [], "literal": []}
 
         for filename in files:
             obj_filename = get_obj_filename(searchpath, filename)
@@ -486,7 +511,7 @@ def main():
                                                                  complete_list_of_sections)
 
     generate_linker_script(linker_file, sram_data_linker_file,
-                           sram_bss_linker_file, complete_list_of_sections)
+                           sram_bss_linker_file, complete_list_of_sections, phdrs)
 
     code_generation = {"copy_code": '', "zero_code": '', "extern": ''}
     for mem_type, list_of_sections in sorted(complete_list_of_sections.items()):

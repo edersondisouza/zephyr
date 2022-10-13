@@ -18,15 +18,17 @@ ZTEST(code_relocation, test_function_in_split_multiple)
 	extern uintptr_t __sram2_bss_start;
 	extern uintptr_t __sram2_bss_end;
 
+	printk("Address of __data_start %p\n", &__data_start);
+	printk("Address of __data_end %p\n", &__data_end);
 	printk("Address of var_file3_sram_data %p\n", &var_file3_sram_data);
 	printk("Address of var_file3_sram2_bss %p\n\n", &var_file3_sram2_bss);
 
-	zassert_between_inclusive((uintptr_t)&var_file3_sram_data,
-		(uintptr_t)&__data_start,
-		(uintptr_t)&__data_end,
-		"var_file3_sram_data not in sram_data region");
 	zassert_between_inclusive((uintptr_t)&var_file3_sram2_bss,
 		(uintptr_t)&__sram2_bss_start,
 		(uintptr_t)&__sram2_bss_end,
 		"var_file3_sram2_bss not in sram2_bss region");
+	zassert_between_inclusive((uintptr_t)&var_file3_sram_data,
+		(uintptr_t)&__data_start,
+		(uintptr_t)&__data_end,
+		"var_file3_sram_data not in sram_data region");
 }
