@@ -6,10 +6,7 @@
 
 #include <zephyr/kernel.h>
 
-extern void reloc();
-
-void main(void)
+void reloc(void)
 {
-	printk("Hello World! %s [%p]\n", CONFIG_BOARD, main);
-	reloc();
+	printk("Hello World from relocated! [%p]\n", reloc);
 }

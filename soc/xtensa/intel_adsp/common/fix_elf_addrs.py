@@ -36,8 +36,8 @@ with open(elffile, "rb") as fd:
     elf = ELFFile(fd)
     for s in elf.iter_sections():
         addr = s.header.sh_addr
-        if uc_min <= addr <= uc_max:
-            print(f"fix_elf_addrs.py: Moving section {s.name} to cached SRAM region")
+        if uc_min <= addr <= uc_max and s.header.sh_size != 0:
+            print(f"fix_elf_addrs.py: Moving section {s.name} [{addr:x}] to cached SRAM region [{uc_min:x},{uc_max:x}]")
             fixup.append(s.name)
 
 for s in fixup:
@@ -48,4 +48,5 @@ for s in fixup:
     # Just swallow the error stream for now pending rework to the
     # linker framework.
     cmd = f"{objcopy_bin} --change-section-address {s}+{cache_off} {elffile} 2>{os.devnull}"
+    print(">>>", cmd, "<<<")
     os.system(cmd)
