@@ -127,7 +127,7 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/irq.h>
-LOG_MODULE_REGISTER(host_sub_npcx, LOG_LEVEL_ERR);
+LOG_MODULE_REGISTER(host_sub_npcx, CONFIG_ESPI_LOG_LEVEL);
 
 struct host_sub_npcx_config {
 	/* host module instances */
@@ -472,14 +472,13 @@ static void host_pmch_ibf_isr(const void *arg)
 	ARG_UNUSED(arg);
 	struct pmch_reg *const inst_acpi = host_sub_cfg.inst_pm_acpi;
 	struct pmch_reg *const inst_hcmd = host_sub_cfg.inst_pm_hcmd;
-	uint8_t in_data;
+	uint8_t in_data = 0;
 
 	/* Host put data on input buffer of ACPI channel */
 	if (IS_BIT_SET(inst_acpi->HIPMST, NPCX_HIPMST_IBF)) {
 		/* Set processing flag before reading command byte */
 		inst_acpi->HIPMST |= BIT(NPCX_HIPMST_F0);
-		/* Read out input data and clear IBF pending bit */
-		in_data = inst_acpi->HIPMDI;
+
 #if defined(CONFIG_ESPI_PERIPHERAL_HOST_IO)
 		host_acpi_process_input_data(in_data);
 #endif
@@ -489,8 +488,7 @@ static void host_pmch_ibf_isr(const void *arg)
 	if (IS_BIT_SET(inst_hcmd->HIPMST, NPCX_HIPMST_IBF)) {
 		/* Set processing flag before reading command byte */
 		inst_hcmd->HIPMST |= BIT(NPCX_HIPMST_F0);
-		/* Read out input data and clear IBF pending bit */
-		in_data = inst_hcmd->HIPMDI;
+
 #if defined(CONFIG_ESPI_PERIPHERAL_EC_HOST_CMD)
 		host_hcmd_process_input_data(in_data);
 #endif
