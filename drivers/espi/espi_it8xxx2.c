@@ -487,7 +487,10 @@ static void pmc1_it8xxx2_ibf_isr(const struct device *dev)
 	acpi_evt->type = !!(pmc_reg->PM1STS & PMC_PM1STS_A2_ADDR);
 	/* Set processing flag before reading command byte */
 	pmc_reg->PM1STS |= PMC_PM1STS_GPF;
-	acpi_evt->data = pmc_reg->PM1DI;
+	/*
+	 * Disabled below line deliberately because PM1DI read clearing ACPI IBF flag.
+	 * acpi_evt->data = pmc_reg->PM1DI;
+	 */
 
 	espi_send_callbacks(&data->callbacks, dev, evt);
 }
