@@ -140,6 +140,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${GEN_DEVICETREE_
 add_doc_target(
   html
   COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV}
+  PYTHONPATH=${ZEPHYR_BASE}/doc/_extensions/zephyr${SEP}$ENV{PYTHONPATH}
   ${SPHINXBUILD}
     -b html
     -c ${DOCS_CFG_DIR}
