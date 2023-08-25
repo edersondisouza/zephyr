@@ -24,7 +24,7 @@
 /**
  * @brief Task Watchdog APIs
  * @defgroup task_wdt_api Task Watchdog APIs
- * @since 2.6.0
+ * @since 2.5.0
  * @ingroup os_services
  * @{
  */

@@ -18,7 +18,7 @@ extern "C" {
 /**
  * @brief Logger
  * @defgroup logger Logger system
- * @since 1.0.0
+ * @since 1.13.0
  * @ingroup logging
  * @{
  * @}
@@ -27,7 +27,7 @@ extern "C" {
 /**
  * @brief Logger control API
  * @defgroup log_ctrl Logger control API
- * @since 1.0.0
+ * @since 1.13.0
  * @ingroup logger
  * @{
  */

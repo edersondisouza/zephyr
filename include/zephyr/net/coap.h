@@ -17,7 +17,7 @@
 /**
  * @brief COAP library
  * @defgroup coap COAP Library
- * @since 1.0.0
+ * @since 1.10.0
  * @ingroup networking
  * @{
  */

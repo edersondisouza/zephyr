@@ -18,7 +18,7 @@ extern "C" {
 /**
  * @brief Logging
  * @defgroup logging Logging
- * @since 1.0.0
+ * @since 1.13.0
  * @ingroup os_services
  * @{
  * @}
