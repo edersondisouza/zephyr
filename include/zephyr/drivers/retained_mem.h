@@ -31,6 +31,7 @@ BUILD_ASSERT(!(sizeof(off_t) > sizeof(size_t)),
  * @brief Retained memory driver interface
  * @defgroup retained_mem_interface Retained memory driver interface
  * @since 3.4.0
+ * @version 0.1.0
  * @ingroup io_interfaces
  * @{
  */

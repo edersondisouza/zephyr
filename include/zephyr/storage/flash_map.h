@@ -19,6 +19,7 @@
  *
  * @defgroup flash_area_api flash area Interface
  * @since 1.11.0
+ * @version 1.0.0
  * @ingroup storage_apis
  * @{
  */

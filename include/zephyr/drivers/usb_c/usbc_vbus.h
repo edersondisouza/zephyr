@@ -19,6 +19,7 @@
  * @brief USB-C VBUS API
  * @defgroup usbc_vbus_api USB-C VBUS API
  * @since 3.3.0
+ * @version 0.1.0
  * @ingroup io_interfaces
  * @{
  */

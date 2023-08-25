@@ -17,6 +17,7 @@
  * @brief Counter Interface
  * @defgroup counter_interface Counter Interface
  * @since 1.14.0
+ * @version 0.8.0
  * @ingroup io_interfaces
  * @{
  */

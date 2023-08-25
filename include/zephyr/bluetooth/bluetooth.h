@@ -36,6 +36,7 @@ extern "C" {
  * @brief Generic Access Profile (GAP)
  * @defgroup bt_gap Generic Access Profile (GAP)
  * @since 1.0.0
+ * @version 1.0.0
  * @ingroup bluetooth
  * @{
  */

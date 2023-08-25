@@ -20,6 +20,7 @@
  * @brief SDHC interface
  * @defgroup sdhc_interface SDHC interface
  * @since 3.1.0
+ * @version 0.1.0
  * @ingroup io_interfaces
  * @{
  */

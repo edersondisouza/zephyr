@@ -29,6 +29,7 @@ extern "C" {
  * @brief KSCAN APIs
  * @defgroup kscan_interface Keyboard Scan Driver APIs
  * @since 2.1.0
+ * @version 1.0.0
  * @ingroup io_interfaces
  * @{
  */

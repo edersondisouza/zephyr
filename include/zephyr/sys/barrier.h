@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @addtogroup barrier_apis Barrier Services APIs
  * @since 3.4.0
+ * @version 0.1.0
  * @ingroup kernel_apis
  * @{
  */

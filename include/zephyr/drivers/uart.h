@@ -17,6 +17,7 @@
  * @brief UART Interface
  * @defgroup uart_interface UART Interface
  * @since 1.0.0
+ * @version 1.0.0
  * @ingroup io_interfaces
  * @{
  */
@@ -159,6 +160,7 @@ typedef void (*uart_irq_config_func_t)(const struct device *dev);
  *
  * @defgroup uart_async Async UART API
  * @since 1.14.0
+ * @version 0.8.0
  * @{
  */
 

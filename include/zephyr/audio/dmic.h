@@ -30,6 +30,7 @@
  *
  * @defgroup audio_dmic_interface Digital Microphone Interface
  * @since 1.13.0
+ * @version 0.1.0
  * @ingroup audio_interface
  * @{
  */

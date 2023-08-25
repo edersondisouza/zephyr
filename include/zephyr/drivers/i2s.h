@@ -15,6 +15,7 @@
 /**
  * @defgroup i2s_interface I2S Interface
  * @since 1.9.0
+ * @version 1.0.0
  * @ingroup io_interfaces
  * @brief I2S (Inter-IC Sound) Interface
  *

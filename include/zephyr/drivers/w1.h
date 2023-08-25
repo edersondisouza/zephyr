@@ -27,6 +27,7 @@ extern "C" {
  * @brief 1-Wire Interface
  * @defgroup w1_interface 1-Wire Interface
  * @since 3.2.0
+ * @version 0.1.0
  * @ingroup io_interfaces
  * @{
  */

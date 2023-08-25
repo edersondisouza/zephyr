@@ -17,6 +17,7 @@
 /**
  * @defgroup gna_interface GNA Interface
  * @since 1.14.0
+ * @version 0.1.0
  * @ingroup io_interfaces
  * @{
  *

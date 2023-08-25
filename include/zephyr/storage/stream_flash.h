@@ -18,6 +18,7 @@
  *
  * @defgroup stream_flash Stream to flash interface
  * @since 2.3.0
+ * @version 0.1.0
  * @ingroup storage_apis
  * @{
  */

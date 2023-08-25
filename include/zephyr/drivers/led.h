@@ -16,6 +16,7 @@
  * @brief LED Interface
  * @defgroup led_interface LED Interface
  * @since 1.12.0
+ * @version 1.0.0
  * @ingroup io_interfaces
  * @{
  */

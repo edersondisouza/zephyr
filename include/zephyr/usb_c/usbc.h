@@ -26,6 +26,7 @@ extern "C" {
  * @brief USB-C Device APIs
  * @defgroup _usbc_device_api USB-C Device API
  * @since 3.3.0
+ * @version 0.1.0
  * @{
  */
 

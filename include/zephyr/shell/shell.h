@@ -70,6 +70,7 @@ extern "C" {
  * @brief Shell API
  * @defgroup shell_api Shell API
  * @since 1.14.0
+ * @version 1.0.0
  * @ingroup os_services
  * @{
  */

@@ -25,6 +25,7 @@ extern "C" {
  * @brief ADC driver APIs
  * @defgroup adc_interface ADC driver APIs
  * @since 1.0.0
+ * @version 1.0.0
  * @ingroup io_interfaces
  * @{
  */

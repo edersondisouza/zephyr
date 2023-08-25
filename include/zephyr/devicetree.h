@@ -28,6 +28,7 @@
  * @brief devicetree.h API
  * @defgroup devicetree Devicetree
  * @since 2.2.0
+ * @version 1.0.0
  * @{
  * @}
  */

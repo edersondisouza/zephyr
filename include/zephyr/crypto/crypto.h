@@ -28,6 +28,7 @@
  * @brief Crypto APIs
  * @defgroup crypto Crypto
  * @since 1.7.99
+ * @version 1.0.0
  * @ingroup os_services
  * @{
  */

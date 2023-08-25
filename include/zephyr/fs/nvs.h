@@ -20,6 +20,7 @@ extern "C" {
  * @brief Non-volatile Storage (NVS)
  * @defgroup nvs Non-volatile Storage (NVS)
  * @since 1.12.0
+ * @version 1.0.0
  * @ingroup file_system_storage
  * @{
  * @}

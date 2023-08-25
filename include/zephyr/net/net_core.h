@@ -30,6 +30,7 @@ extern "C" {
  * @brief Networking
  * @defgroup networking Networking
  * @since 1.0.0
+ * @version 1.0.0
  * @ingroup connectivity
  * @{
  * @}

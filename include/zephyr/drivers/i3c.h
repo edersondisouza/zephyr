@@ -11,6 +11,7 @@
  * @brief I3C Interface
  * @defgroup i3c_interface I3C Interface
  * @since 3.2.0
+ * @version 0.1.0
  * @ingroup io_interfaces
  * @{
  */
