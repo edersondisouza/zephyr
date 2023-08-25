@@ -15,6 +15,7 @@ extern "C" {
 /**
  * @brief MCUmgr fs_mgmt callback API
  * @defgroup mcumgr_callback_api_fs_mgmt MCUmgr fs_mgmt callback API
+ * @since 3.3.0
  * @ingroup mcumgr_callback_api
  * @{
  */

@@ -15,6 +15,7 @@
 
 /**
  * @defgroup ztest_mock Ztest mocking support
+ * @since 1.6.0
  * @ingroup ztest
  *
  * This module provides simple mocking functions for unit testing. These

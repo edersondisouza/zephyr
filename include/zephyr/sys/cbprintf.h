@@ -129,6 +129,7 @@ extern "C" {
 
 /**
  * @defgroup cbprintf_apis Formatted Output APIs
+ * @since 2.5.0
  * @ingroup utilities
  * @{
  */
@@ -146,6 +147,7 @@ BUILD_ASSERT(Z_IS_POW2(CBPRINTF_PACKAGE_ALIGNMENT));
 
 
 /**@defgroup CBPRINTF_PACKAGE_FLAGS Package flags
+ * @since 2.7.0
  * @{
  */
 
@@ -204,6 +206,7 @@ BUILD_ASSERT(Z_IS_POW2(CBPRINTF_PACKAGE_ALIGNMENT));
 
 /**
  * @defgroup CBPRINTF_PACKAGE_CONVERT_FLAGS Package convert flags
+ * @since 3.1.0
  * @{
  */
 

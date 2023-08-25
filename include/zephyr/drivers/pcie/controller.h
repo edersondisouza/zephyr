@@ -22,6 +22,7 @@
 /**
  * @brief PCI Express Controller Interface
  * @defgroup pcie_controller_interface PCI Express Controller Interface
+ * @since 3.0.0
  * @ingroup io_interfaces
  * @{
  */

@@ -46,6 +46,7 @@ extern "C" {
 /**
  * @brief RTIO
  * @defgroup rtio RTIO
+ * @since 3.2.0
  * @ingroup os_services
  * @{
  */
@@ -53,6 +54,7 @@ extern "C" {
 /**
  * @brief RTIO Predefined Priorties
  * @defgroup rtio_sqe_prio RTIO Priorities
+ * @since 3.2.0
  * @ingroup rtio
  * @{
  */
@@ -80,6 +82,7 @@ extern "C" {
 /**
  * @brief RTIO SQE Flags
  * @defgroup rtio_sqe_flags RTIO SQE Flags
+ * @since 3.2.0
  * @ingroup rtio
  * @{
  */
@@ -145,6 +148,7 @@ extern "C" {
 /**
  * @brief RTIO CQE Flags
  * @defgroup rtio_cqe_flags RTIO CQE Flags
+ * @since 3.4.0
  * @ingroup rtio
  * @{
  */

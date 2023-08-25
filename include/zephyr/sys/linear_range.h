@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup linear_range Linear Range
+ * @since 3.3.0
  * @ingroup utilities
  *
  * The linear range API maps values in a linear range to a range index. A linear

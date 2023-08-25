@@ -9,6 +9,7 @@
 
 /**
  * @defgroup regulator_adp5360 ADP5360 Devicetree helpers.
+ * @since 3.4.0
  * @ingroup regulator_interface
  * @{
  */

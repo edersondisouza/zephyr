@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief Boot mode interface
  * @defgroup boot_mode_interface Boot mode interface
+ * @since 3.4.0
  * @ingroup retention_api
  * @{
  */

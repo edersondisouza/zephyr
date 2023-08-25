@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief Coredump pseudo-device driver APIs
  * @defgroup coredump_device_interface Coredump pseudo-device driver APIs
+ * @since 3.2.0
  * @ingroup io_interfaces
  * @{
  */

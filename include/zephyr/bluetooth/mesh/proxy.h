@@ -18,6 +18,7 @@
 /**
  * @brief Proxy
  * @defgroup bt_mesh_proxy Proxy
+ * @since 1.9.0
  * @ingroup bt_mesh
  * @{
  */

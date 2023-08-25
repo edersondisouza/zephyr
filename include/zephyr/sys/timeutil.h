@@ -31,8 +31,10 @@ extern "C" {
 
 /**
  * @defgroup timeutil_apis Time Utility APIs
+ * @since 1.0.0
  * @ingroup utilities
  * @defgroup timeutil_repr_apis Time Representation APIs
+ * @since 2.0.0
  * @ingroup timeutil_apis
  * @{
  */
@@ -64,6 +66,7 @@ time_t timeutil_timegm(const struct tm *tm);
 /**
  * @}
  * @defgroup timeutil_sync_apis Time Synchronization APIs
+ * @since 2.5.0
  * @ingroup timeutil_apis
  * @{
  */

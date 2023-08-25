@@ -10,6 +10,7 @@
  * @file
  * @brief PCIe Capabilities
  * @defgroup pcie_capabilities PCIe Capabilities
+ * @since 1.0.0
  * @ingroup pcie_host_interface
  * @{
  */

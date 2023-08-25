@@ -18,6 +18,7 @@
 /**
  * @brief Heartbeat
  * @defgroup bt_mesh_heartbeat Heartbeat
+ * @since 1.12.0
  * @ingroup bt_mesh
  * @{
  */

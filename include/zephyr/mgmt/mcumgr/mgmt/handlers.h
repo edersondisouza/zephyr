@@ -18,6 +18,7 @@ extern "C" {
 /**
  * @brief MCUmgr handler registration API
  * @defgroup mcumgr_handler_api MCUmgr handler API
+ * @since 3.3.0
  * @ingroup mcumgr
  * @{
  */

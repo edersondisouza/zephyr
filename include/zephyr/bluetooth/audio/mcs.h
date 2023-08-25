@@ -11,6 +11,7 @@
  * @brief Media Control Service (MCS)
  *
  * @defgroup bt_mcs Media Control Service (MCS)
+ * @since 3.0.0
  *
  * @ingroup bluetooth
  * @{

@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief Network configuration library
  * @defgroup net_config Network Configuration Library
+ * @since 1.13.0
  * @ingroup networking
  * @{
  */

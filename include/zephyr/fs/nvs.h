@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Non-volatile Storage (NVS)
  * @defgroup nvs Non-volatile Storage (NVS)
+ * @since 1.12.0
  * @ingroup file_system_storage
  * @{
  * @}
@@ -69,6 +70,7 @@ struct nvs_fs {
 /**
  * @brief Non-volatile Storage APIs
  * @defgroup nvs_high_level_api Non-volatile Storage APIs
+ * @since 1.12.0
  * @ingroup nvs
  * @{
  */

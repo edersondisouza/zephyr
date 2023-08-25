@@ -10,6 +10,7 @@
 /**
  * @brief PCIe Host MSI Interface
  * @defgroup pcie_host_msi_interface PCIe Host MSI Interface
+ * @since 2.0.0
  * @ingroup pcie_host_interface
  * @{
  */

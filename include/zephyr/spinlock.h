@@ -27,6 +27,7 @@ extern "C" {
 /**
  * @brief Spinlock APIs
  * @defgroup spinlock_apis Spinlock APIs
+ * @since 1.11.0
  * @ingroup kernel_apis
  * @{
  */

@@ -18,6 +18,7 @@
 /**
  * @brief USB Type-C Port Controller API
  * @defgroup usb_type_c_port_controller_api USB Type-C Port Controller API
+ * @since 3.1.0
  * @ingroup io_interfaces
  * @{
  */

@@ -17,6 +17,7 @@
 /**
  * @brief USB Type-C
  * @defgroup usb_type_c USB Type-C
+ * @since 3.1.0
  * @ingroup io_interfaces
  * @{
  */

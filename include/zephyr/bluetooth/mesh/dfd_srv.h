@@ -7,6 +7,7 @@
 /**
  * @file
  * @defgroup bt_mesh_dfd_srv Firmware Distribution Server model
+ * @since 3.4.0
  * @ingroup bt_mesh_dfd
  * @{
  * @brief API for the Firmware Distribution Server model

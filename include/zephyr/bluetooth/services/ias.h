@@ -10,6 +10,7 @@
 /**
  * @brief Immediate Alert Service (IAS)
  * @defgroup bt_ias Immediate Alert Service (IAS)
+ * @since 3.1.0
  * @ingroup bluetooth
  * @{
  *

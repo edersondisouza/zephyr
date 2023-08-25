@@ -13,6 +13,7 @@
 /**
  * @brief Configuration Client Model
  * @defgroup bt_mesh_cfg_cli Configuration Client Model
+ * @since 1.10.0
  * @ingroup bt_mesh
  * @{
  */

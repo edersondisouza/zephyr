@@ -32,11 +32,13 @@ extern "C" {
 
 /**
  * @defgroup checksum Checksum
+ * @since 1.11.0
  * @ingroup os_services
  */
 
 /**
  * @defgroup crc CRC
+ * @since 1.11.0
  * @ingroup checksum
  * @{
  */

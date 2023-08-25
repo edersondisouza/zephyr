@@ -29,6 +29,7 @@ extern "C" {
 /**
  * @brief New USB device stack core API
  * @defgroup usbd_api USB device core API
+ * @since 1.13.0
  * @ingroup usb
  * @{
  */

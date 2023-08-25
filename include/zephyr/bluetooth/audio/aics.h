@@ -11,6 +11,7 @@
  * @brief Audio Input Control Service (AICS)
  *
  * @defgroup bt_gatt_aics Audio Input Control Service (AICS)
+ * @since 2.6.0
  *
  * @ingroup bluetooth
  * @{

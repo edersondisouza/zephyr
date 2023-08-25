@@ -22,6 +22,7 @@
 /**
  * @brief eSPI Emulation Interface
  * @defgroup espi_emul_interface eSPI Emulation Interface
+ * @since 2.5.0
  * @ingroup io_emulators
  * @{
  */

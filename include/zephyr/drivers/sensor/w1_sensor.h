@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief 1-Wire Sensor API
  * @defgroup w1_sensor 1-Wire Sensor API
+ * @since 3.2.0
  * @ingroup w1_interface
  * @{
  */

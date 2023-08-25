@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief BC1.2 driver APIs
  * @defgroup b12_interface BC1.2 driver APIs
+ * @since 3.4.0
  * @ingroup io_interfaces
  * @{
  */

@@ -10,6 +10,7 @@
 /**
  * @brief BSD Sockets compatible API
  * @defgroup bsd_sockets BSD Sockets compatible API
+ * @since 1.0.0
  * @ingroup networking
  * @{
  */

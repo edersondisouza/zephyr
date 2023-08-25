@@ -7,6 +7,7 @@
 /** @file mqtt_sn.h
  *
  * @defgroup mqtt_sn_socket MQTT-SN Client library
+ * @since 3.3.0
  * @ingroup networking
  * @{
  * @brief MQTT-SN Client Implementation

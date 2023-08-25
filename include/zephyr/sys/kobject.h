@@ -43,6 +43,7 @@ enum k_objects {
 };
 /**
  * @defgroup usermode_apis User Mode APIs
+ * @since 1.10.0
  * @ingroup kernel_apis
  * @{
  */

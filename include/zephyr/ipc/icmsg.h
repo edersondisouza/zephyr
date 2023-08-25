@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief Icmsg IPC library API
  * @defgroup ipc_icmsg_api Icmsg IPC library API
+ * @since 3.3.0
  * @ingroup ipc
  * @{
  */

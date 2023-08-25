@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Device Power Management API
  * @defgroup subsys_pm_device Device
+ * @since 2.6.0
  * @ingroup subsys_pm
  * @{
  */

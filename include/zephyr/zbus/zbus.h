@@ -18,6 +18,7 @@ extern "C" {
 /**
  * @brief Zbus API
  * @defgroup zbus_apis Zbus APIs
+ * @since 3.3.0
  * @ingroup os_services
  * @{
  */

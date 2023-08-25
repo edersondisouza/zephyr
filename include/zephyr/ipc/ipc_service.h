@@ -18,6 +18,7 @@ extern "C" {
 /**
  * @brief IPC
  * @defgroup ipc IPC
+ * @since 1.12.0
  * @ingroup os_services
  * @{
  * @}
@@ -26,6 +27,7 @@ extern "C" {
 /**
  * @brief IPC Service API
  * @defgroup ipc_service_api IPC service APIs
+ * @since 2.7.0
  * @ingroup ipc
  * @{
  */

@@ -17,6 +17,7 @@
 /**
  * @brief RTIO Single Producer Single Consumer (SPSC) Queue API
  * @defgroup rtio_spsc RTIO SPSC API
+ * @since 3.2.0
  * @ingroup rtio
  * @{
  */

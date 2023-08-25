@@ -21,6 +21,7 @@ extern "C" {
  */
 
 /**@defgroup SPSC_PBUF_FLAGS MPSC packet buffer flags
+ * @since 3.2.0
  * @{
  */
 

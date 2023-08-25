@@ -15,6 +15,7 @@ extern "C" {
 #endif
 
 /** @defgroup thread_analyzer Thread analyzer
+ * @since 2.3.0
  *  @ingroup os_services
  *  @brief Module for analyzing threads
  *

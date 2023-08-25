@@ -13,6 +13,7 @@
 /**
  * @brief Health Server Model
  * @defgroup bt_mesh_health_srv Health Server Model
+ * @since 1.10.0
  * @ingroup bt_mesh
  * @{
  */

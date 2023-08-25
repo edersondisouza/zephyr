@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief Ethernet Bridging API
  * @defgroup eth_bridge Ethernet Bridging API
+ * @since 2.7.0
  * @ingroup networking
  * @{
  */

@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_dfu Bluetooth Mesh Device Firmware Update
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief FT8xx driver public APIs
  * @defgroup ft8xx_interface FT8xx driver APIs
+ * @since 2.6.0
  * @ingroup misc_interfaces
  * @{
  */

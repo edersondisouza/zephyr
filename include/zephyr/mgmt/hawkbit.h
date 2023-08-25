@@ -7,6 +7,7 @@
 /**
  * @brief hawkBit Firmware Over-the-Air for Zephyr Project.
  * @defgroup hawkbit hawkBit Firmware Over-the-Air
+ * @since 2.4.0
  * @ingroup third_party
  * @{
  */

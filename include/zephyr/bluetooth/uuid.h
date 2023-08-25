@@ -13,6 +13,7 @@
 /**
  * @brief UUIDs
  * @defgroup bt_uuid UUIDs
+ * @since 1.0.0
  * @ingroup bluetooth
  * @{
  */

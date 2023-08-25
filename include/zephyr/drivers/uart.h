@@ -16,6 +16,7 @@
 /**
  * @brief UART Interface
  * @defgroup uart_interface UART Interface
+ * @since 1.0.0
  * @ingroup io_interfaces
  * @{
  */
@@ -132,6 +133,7 @@ struct uart_config {
 
 /**
  * @defgroup uart_interrupt Interrupt-driven UART API
+ * @since 1.0.0
  * @{
  */
 
@@ -156,6 +158,7 @@ typedef void (*uart_irq_config_func_t)(const struct device *dev);
  * @}
  *
  * @defgroup uart_async Async UART API
+ * @since 1.14.0
  * @{
  */
 
@@ -484,6 +487,7 @@ static inline int z_impl_uart_err_check(const struct device *dev)
 
 /**
  * @defgroup uart_polling Polling UART API
+ * @since 1.0.0
  * @{
  */
 

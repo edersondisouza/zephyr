@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_blob_io_flash Bluetooth Mesh BLOB flash stream
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

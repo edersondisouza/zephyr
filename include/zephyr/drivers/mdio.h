@@ -15,6 +15,7 @@
 /**
  * @brief MDIO Interface
  * @defgroup mdio_interface MDIO Interface
+ * @since 1.7.99
  * @ingroup io_interfaces
  * @{
  */

@@ -15,6 +15,7 @@
 
 /**
  * @addtogroup coap COAP Library
+ * @since 1.0.0
  * @{
  */
 

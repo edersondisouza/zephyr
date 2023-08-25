@@ -37,6 +37,7 @@ extern "C" {
 
 /**
  * @defgroup sys-util Utility Functions
+ * @since 1.0.0
  * @ingroup utilities
  * @{
  */

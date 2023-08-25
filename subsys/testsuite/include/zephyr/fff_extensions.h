@@ -18,6 +18,7 @@
 
 /**
  * @defgroup fff_extensions FFF extensions
+ * @since 3.4.0
  * @ingroup testing
  *
  * This module provides extensions to FFF for simplifying the

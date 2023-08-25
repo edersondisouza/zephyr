@@ -14,6 +14,7 @@
 /**
  * @brief Bluetooth Audio
  * @defgroup bt_audio Bluetooth Audio
+ * @since 3.0.0
  * @ingroup bluetooth
  * @{
  */

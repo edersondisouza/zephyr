@@ -18,6 +18,7 @@
 /**
  * @brief Precision Time Protocol time specification
  * @defgroup ptp_time PTP time
+ * @since 1.13.0
  * @ingroup networking
  * @{
  */

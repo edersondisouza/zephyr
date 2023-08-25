@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief System Clock APIs
  * @defgroup clock_apis System Clock APIs
+ * @since 1.0.0
  * @{
  */
 

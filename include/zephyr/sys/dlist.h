@@ -7,6 +7,7 @@
 /**
  * @file
  * @defgroup doubly-linked-list_apis Doubly-linked list
+ * @since 1.0.0
  * @ingroup datastructure_apis
  *
  * @brief Doubly-linked list implementation

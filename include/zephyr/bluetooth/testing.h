@@ -20,6 +20,7 @@
 /**
  * @brief Bluetooth testing
  * @defgroup bt_test_cb Bluetooth testing callbacks
+ * @since 1.11.0
  * @ingroup bluetooth
  * @{
  */

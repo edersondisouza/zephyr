@@ -16,6 +16,7 @@
 /**
  * @brief HTTP client API
  * @defgroup http_client HTTP client API
+ * @since 1.7.99
  * @ingroup networking
  * @{
  */

@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief Logger backend interface for forwarding to standard backend
  * @defgroup log_backend_std Logger backend standard interface
+ * @since 2.0.0
  * @ingroup logger
  * @{
  */

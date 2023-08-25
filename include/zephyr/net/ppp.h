@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief Point-to-point (PPP) L2/driver support functions
  * @defgroup ppp PPP L2/driver Support Functions
+ * @since 2.0.0
  * @ingroup networking
  * @{
  */

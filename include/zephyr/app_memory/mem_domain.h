@@ -20,6 +20,7 @@ extern "C" {
 
 /**
  * @defgroup mem_domain_apis Memory domain APIs
+ * @since 1.10.0
  * @ingroup kernel_apis
  * @{
  */

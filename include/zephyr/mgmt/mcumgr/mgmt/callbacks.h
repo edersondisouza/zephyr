@@ -34,6 +34,7 @@ extern "C" {
 /**
  * @brief MCUmgr callback API
  * @defgroup mcumgr_callback_api MCUmgr callback API
+ * @since 3.3.0
  * @ingroup mcumgr
  * @{
  */

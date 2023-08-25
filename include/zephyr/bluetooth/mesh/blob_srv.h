@@ -16,6 +16,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_blob_srv Bluetooth Mesh BLOB Transfer Server model API
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

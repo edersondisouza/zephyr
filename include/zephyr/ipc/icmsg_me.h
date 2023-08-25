@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Multi-endpoint extension of icmsg IPC library
  * @defgroup ipc_icmsg_me_api Icmsg multi-endpoint IPC library API
+ * @since 3.4.0
  * @ingroup ipc
  * @{
  */

@@ -148,6 +148,7 @@ static inline bool z_zexpect(bool cond, const char *default_msg, const char *fil
 
 /**
  * @defgroup ztest_assert Ztest assertion macros
+ * @since 1.14.0
  * @ingroup ztest
  *
  * This module provides assertions when using Ztest.
@@ -388,6 +389,7 @@ static inline bool z_zexpect(bool cond, const char *default_msg, const char *fil
 
 /**
  * @defgroup ztest_assume Ztest assumption macros
+ * @since 3.2.0
  * @ingroup ztest
  *
  * This module provides assumptions when using Ztest.
@@ -546,6 +548,7 @@ static inline bool z_zexpect(bool cond, const char *default_msg, const char *fil
 
 /**
  * @defgroup ztest_expect Ztest expectation macros
+ * @since 3.4.0
  * @ingroup ztest
  *
  * This module provides expectations when using Ztest.

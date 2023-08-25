@@ -21,6 +21,7 @@
  * @brief Abstraction layer to write firmware images to flash
  *
  * @defgroup flash_img_api Flash image API
+ * @since 1.10.0
  * @ingroup os_services
  * @{
  */

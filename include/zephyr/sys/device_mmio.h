@@ -20,6 +20,7 @@
 
 /**
  * @defgroup device-mmio Device memory-mapped IO management
+ * @since 2.4.0
  * @ingroup device_model
  * @{
  */
@@ -137,6 +138,7 @@ struct z_device_mmio_rom {
 
 /**
  * @defgroup device-mmio-single Single MMIO region macros
+ * @since 2.4.0
  * @ingroup device-mmio
  *
  * For drivers which need to manage just one MMIO region, the most common
@@ -307,6 +309,7 @@ struct z_device_mmio_rom {
 
 /**
  * @defgroup device-mmio-named Named MMIO region macros
+ * @since 2.4.0
  * @ingroup device-mmio
  *
  * For drivers which need to manage multiple MMIO regions, which will
@@ -548,6 +551,7 @@ struct z_device_mmio_rom {
 
 /**
  * @defgroup device-mmio-toplevel Top-level MMIO region macros
+ * @since 2.4.0
  * @ingroup device-mmio
  *
  * For drivers which do not use Zephyr's driver model and do not

@@ -7,6 +7,7 @@
  /**
   * @file
   * @defgroup single-linked-list_apis Single-linked list
+ * @since 1.2.0
   * @ingroup datastructure_apis
   *
   * @brief Single-linked list implementation.

@@ -19,6 +19,7 @@
 /**
  * @brief EEPROM Interface
  * @defgroup eeprom_interface EEPROM Interface
+ * @since 2.1.0
  * @ingroup io_interfaces
  * @{
  */

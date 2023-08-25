@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_dfd Firmware Distribution models
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

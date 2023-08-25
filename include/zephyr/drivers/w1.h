@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief 1-Wire Interface
  * @defgroup w1_interface 1-Wire Interface
+ * @since 3.2.0
  * @ingroup io_interfaces
  * @{
  */
@@ -163,6 +164,7 @@ static inline int w1_unlock_bus(const struct device *dev)
 /**
  * @brief 1-Wire data link layer
  * @defgroup w1_data_link 1-Wire data link layer
+ * @since 3.2.0
  * @ingroup w1_interface
  * @{
  */
@@ -340,6 +342,7 @@ static inline int z_impl_w1_configure(const struct device *dev,
 /**
  * @brief 1-Wire network layer
  * @defgroup w1_network 1-Wire network layer
+ * @since 3.2.0
  * @ingroup w1_interface
  * @{
  */

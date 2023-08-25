@@ -12,6 +12,7 @@
 
 /**
  * @defgroup input_events Input Event Definitions
+ * @since 3.4.0
  * @ingroup input_interface
  * @{
  */

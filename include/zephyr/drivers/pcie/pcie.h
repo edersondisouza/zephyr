@@ -10,6 +10,7 @@
 /**
  * @brief PCIe Host Interface
  * @defgroup pcie_host_interface PCIe Host Interface
+ * @since 2.0.0
  * @ingroup io_interfaces
  * @{
  */

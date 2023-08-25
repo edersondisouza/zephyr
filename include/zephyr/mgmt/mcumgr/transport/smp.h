@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief MCUmgr transport SMP API
  * @defgroup mcumgr_transport_smp MCUmgr transport SMP API
+ * @since 2.3.0
  * @ingroup mcumgr
  * @{
  */

@@ -18,6 +18,7 @@
 /**
  * @brief BSD Sockets compatible API
  * @defgroup bsd_sockets BSD Sockets compatible API
+ * @since 1.0.0
  * @ingroup networking
  * @{
  */
@@ -84,6 +85,7 @@ struct zsock_pollfd {
 
 /**
  *  @defgroup secure_sockets_options Socket options for TLS
+ * @since 1.13.0
  *  @{
  */
 

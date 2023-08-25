@@ -14,6 +14,7 @@
 /**
  * @brief OpenThread l2 stack api
  * @defgroup OpenThread l2 layer
+ * @since 1.11.0
  * @ingroup networking
  * @{
  */

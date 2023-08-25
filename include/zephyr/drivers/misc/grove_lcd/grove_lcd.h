@@ -18,6 +18,7 @@ extern "C" {
 /**
  * @brief Grove display APIs
  * @defgroup grove_display Grove display APIs
+ * @since 1.0.0
  * @ingroup third_party
  * @{
  */

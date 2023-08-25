@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief FT8xx display list commands
  * @defgroup ft8xx_dl FT8xx display list
+ * @since 2.6.0
  * @ingroup ft8xx_interface
  * @{
  */

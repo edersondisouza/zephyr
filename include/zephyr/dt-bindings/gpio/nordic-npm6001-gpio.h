@@ -9,6 +9,7 @@
 /**
  * @brief nPM6001-specific GPIO Flags
  * @defgroup gpio_interface_npm6001 nPM6001-specific GPIO Flags
+ * @since 3.3.0
  *
  * The drive flags are encoded in the 8 upper bits of @ref gpio_dt_flags_t as
  * follows:

@@ -7,6 +7,7 @@
  /**
   * @file
   * @defgroup flagged-single-linked-list_apis Flagged Single-linked list
+ * @since 1.12.0
   * @ingroup datastructure_apis
   *
   * @brief Flagged single-linked list implementation.

@@ -16,6 +16,7 @@
 /**
  * @brief FLASH internal Interface
  * @defgroup flash_internal_interface FLASH internal Interface
+ * @since 1.10.0
  * @ingroup io_interfaces
  * @{
  */
@@ -45,6 +46,7 @@ struct flash_pages_layout {
 /**
  * @brief FLASH Interface
  * @defgroup flash_interface FLASH Interface
+ * @since 1.1.0
  * @ingroup io_interfaces
  * @{
  */

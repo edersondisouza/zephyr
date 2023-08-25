@@ -16,6 +16,7 @@
 /**
  * @brief PWM Interface
  * @defgroup pwm_interface PWM Interface
+ * @since 1.6.0
  * @ingroup io_interfaces
  * @{
  */

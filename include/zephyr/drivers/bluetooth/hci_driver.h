@@ -13,6 +13,7 @@
 /**
  * @brief HCI drivers
  * @defgroup bt_hci_driver HCI drivers
+ * @since 1.0.0
  * @ingroup bluetooth
  * @{
  */

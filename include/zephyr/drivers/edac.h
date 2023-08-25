@@ -20,6 +20,7 @@ typedef void (*edac_notify_callback_f)(const struct device *dev, void *data);
 
 /**
  * @defgroup edac EDAC API
+ * @since 2.5.0
  * @ingroup io_interfaces
  * @{
  */

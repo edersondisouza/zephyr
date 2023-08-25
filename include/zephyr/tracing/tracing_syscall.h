@@ -16,6 +16,7 @@
 /**
  * @brief Syscall Tracing APIs
  * @defgroup subsys_tracing_apis_syscall Syscall Tracing APIs
+ * @since 2.6.0
  * @ingroup subsys_tracing_apis
  * @{
  */

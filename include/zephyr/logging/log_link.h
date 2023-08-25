@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Log link API
  * @defgroup log_link Log link API
+ * @since 3.0.0
  * @ingroup logger
  * @{
  */

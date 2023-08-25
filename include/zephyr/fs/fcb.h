@@ -24,6 +24,7 @@ extern "C" {
 
 /**
  * @defgroup fcb Flash Circular Buffer (FCB)
+ * @since 1.11.0
  * @ingroup file_system_storage
  * @{
  * @}
@@ -31,6 +32,7 @@ extern "C" {
 
 /**
  * @defgroup fcb_data_structures Flash Circular Buffer Data Structures
+ * @since 1.11.0
  * @ingroup fcb
  * @{
  */
@@ -148,6 +150,7 @@ struct fcb {
 /**
  * @brief Flash Circular Buffer APIs
  * @defgroup fcb_api fcb API
+ * @since 1.11.0
  * @ingroup fcb
  * @{
  */
@@ -310,6 +313,7 @@ int fcb_clear(struct fcb *fcb);
 /**
  * @brief Flash Circular internal
  * @defgroup fcb_internal fcb non-API prototypes
+ * @since 1.11.0
  * @ingroup fcb
  * @{
  */

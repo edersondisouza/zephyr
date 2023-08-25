@@ -23,6 +23,7 @@
 /**
  * @brief MODBUS transport protocol API
  * @defgroup modbus MODBUS
+ * @since 2.6.0
  * @ingroup io_interfaces
  * @{
  */

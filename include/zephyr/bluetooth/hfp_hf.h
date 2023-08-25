@@ -13,6 +13,7 @@
 /**
  * @brief Hands Free Profile (HFP)
  * @defgroup bt_hfp Hands Free Profile (HFP)
+ * @since 1.6.0
  * @ingroup bluetooth
  * @{
  */

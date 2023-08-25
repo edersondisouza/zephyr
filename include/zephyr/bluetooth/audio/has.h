@@ -11,6 +11,7 @@
  * @brief Hearing Access Service (HAS)
  *
  * @defgroup bt_has Hearing Access Service (HAS)
+ * @since 3.1.0
  *
  * @ingroup bluetooth
  * @{

@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief System Power Management Policy API
  * @defgroup subsys_pm_sys_policy Policy
+ * @since 3.1.0
  * @ingroup subsys_pm_sys
  * @{
  */

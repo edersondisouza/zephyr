@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief PS/2 Driver APIs
  * @defgroup ps2_interface PS/2 Driver APIs
+ * @since 2.1.0
  * @ingroup io_interfaces
  * @{
  */

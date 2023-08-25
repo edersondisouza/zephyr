@@ -92,6 +92,7 @@ extern "C" {
 /**
  * @brief USB Device Core Layer API
  * @defgroup _usb_device_core_api USB Device Core API
+ * @since 1.12.0
  * @{
  */
 

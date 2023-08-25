@@ -10,6 +10,7 @@
 /**
  * @brief I3C Common Command Codes
  * @defgroup i3c_ccc I3C Common Command Codes
+ * @since 3.2.0
  * @ingroup i3c_interface
  * @{
  */

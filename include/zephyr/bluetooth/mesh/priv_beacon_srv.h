@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_priv_beacon_srv Bluetooth Mesh Private Beacon Server
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

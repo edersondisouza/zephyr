@@ -7,6 +7,7 @@
 /**
  * @brief UpdateHub Firmware Over-the-Air for Zephyr Project.
  * @defgroup updatehub UpdateHub Firmware Over-the-Air
+ * @since 2.0.0
  * @ingroup third_party
  * @{
  */

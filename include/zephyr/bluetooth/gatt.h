@@ -13,6 +13,7 @@
 /**
  * @brief Generic Attribute Profile (GATT)
  * @defgroup bt_gatt Generic Attribute Profile (GATT)
+ * @since 1.0.0
  * @ingroup bluetooth
  * @{
  */
@@ -364,6 +365,7 @@ struct bt_gatt_cpf {
 
 /**
  * @defgroup bt_gatt_server GATT Server APIs
+ * @since 1.0.0
  * @ingroup bt_gatt
  * @{
  */
@@ -1306,6 +1308,7 @@ uint16_t bt_gatt_get_mtu(struct bt_conn *conn);
 
 /**
  * @defgroup bt_gatt_client GATT Client APIs
+ * @since 1.0.0
  * @ingroup bt_gatt
  * @{
  */

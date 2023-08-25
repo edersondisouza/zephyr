@@ -11,6 +11,7 @@
  * @brief Common Audio Profile (CAP)
  *
  * @defgroup bt_cap Common Audio Profile (CAP)
+ * @since 3.2.0
  *
  * @ingroup bluetooth
  * @{

@@ -11,6 +11,7 @@
 /**
  * @brief PCIe Host PTM Interface
  * @defgroup pcie_host_ptm_interface PCIe Host PTM Interface
+ * @since 3.0.0
  * @ingroup pcie_host_interface
  * @{
  */

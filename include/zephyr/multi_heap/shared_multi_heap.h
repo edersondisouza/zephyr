@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Heap Management
  * @defgroup heaps Heap Management
+ * @since 3.0.0
  * @ingroup os_services
  * @{
  * @}
@@ -27,6 +28,7 @@ extern "C" {
 /**
  * @brief Shared Multi-Heap (SMH) interface
  * @defgroup shared_multi_heap Shared multi-heap interface
+ * @since 3.0.0
  * @ingroup heaps
  * @{
  *

@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Multi producer, single consumer packet buffer API
  * @defgroup mpsc_buf MPSC (Multi producer, single consumer) packet buffer API
+ * @since 2.6.0
  * @ingroup kernel_apis
  * @{
  */
@@ -42,6 +43,7 @@ extern "C" {
  */
 
 /**@defgroup MPSC_PBUF_FLAGS MPSC packet buffer flags
+ * @since 2.6.0
  * @{
  */
 

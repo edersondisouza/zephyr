@@ -10,6 +10,7 @@
 /**
  * @brief I3C Target Device API
  * @defgroup i3c_target_device Target Device API
+ * @since 3.2.0
  * @ingroup i3c_interface
  * @{
  */

@@ -9,6 +9,7 @@
 
 /**
  * @defgroup regulator_npm1300 NPM1300 Devicetree helpers.
+ * @since 3.4.0
  * @ingroup regulator_interface
  * @{
  */

@@ -7,6 +7,7 @@
 /**
  * @file
  * @defgroup bt_mesh_dfu_metadata Bluetooth mesh Device Firmware Update (DFU) metadata
+ * @since 3.4.0
  * @ingroup bt_mesh_dfu
  * @{
  * @brief Common types and functions for the Bluetooth mesh DFU metadata.

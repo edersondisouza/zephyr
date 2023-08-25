@@ -21,6 +21,7 @@ extern "C" {
 
 /**
  * @defgroup fatal_apis Fatal error APIs
+ * @since 2.0.0
  * @ingroup kernel_apis
  * @{
  */

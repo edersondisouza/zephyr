@@ -34,6 +34,7 @@ extern "C" {
  *       prefixed names.
  *
  * @defgroup ft8xx_reference_api FT8xx reference API
+ * @since 1.0.0
  * @ingroup ft8xx_interface
  * @{
  */

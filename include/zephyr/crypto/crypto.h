@@ -27,6 +27,7 @@
 /**
  * @brief Crypto APIs
  * @defgroup crypto Crypto
+ * @since 1.7.99
  * @ingroup os_services
  * @{
  */
@@ -134,6 +135,7 @@ static inline int crypto_query_hwcaps(const struct device *dev)
 /**
  * @brief Crypto Cipher APIs
  * @defgroup crypto_cipher Cipher
+ * @since 1.5.0
  * @ingroup crypto
  * @{
  */
@@ -357,6 +359,7 @@ static inline int cipher_gcm_op(struct cipher_ctx *ctx,
 /**
  * @brief Crypto Hash APIs
  * @defgroup crypto_hash Hash
+ * @since 1.11.0
  * @ingroup crypto
  * @{
  */

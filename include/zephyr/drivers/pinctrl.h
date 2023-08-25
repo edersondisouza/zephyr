@@ -14,6 +14,7 @@
 /**
  * @brief Pin Controller Interface
  * @defgroup pinctrl_interface Pin Controller Interface
+ * @since 3.0.0
  * @ingroup io_interfaces
  * @{
  */
@@ -356,6 +357,7 @@ static inline int pinctrl_apply_state(const struct pinctrl_dev_config *config,
 #if defined(CONFIG_PINCTRL_DYNAMIC) || defined(__DOXYGEN__)
 /**
  * @defgroup pinctrl_interface_dynamic Dynamic Pin Control
+ * @since 3.0.0
  * @{
  */
 

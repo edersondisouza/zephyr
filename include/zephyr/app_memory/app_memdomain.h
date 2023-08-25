@@ -13,6 +13,7 @@
 /**
  * @brief Application memory domain APIs
  * @defgroup mem_domain_apis_app Application memory domain APIs
+ * @since 1.14.0
  * @ingroup mem_domain_apis
  * @{
  */

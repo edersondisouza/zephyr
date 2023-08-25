@@ -16,6 +16,7 @@
 /**
  * @brief MBOX Interface
  * @defgroup mbox_interface MBOX Interface
+ * @since 3.0.0
  * @ingroup io_interfaces
  * @{
  *

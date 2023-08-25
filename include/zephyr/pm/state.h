@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief System Power Management States
  * @defgroup subsys_pm_states States
+ * @since 2.5.0
  * @ingroup subsys_pm
  * @{
  */

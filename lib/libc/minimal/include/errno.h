@@ -25,6 +25,7 @@
  *        Error codes returned by functions.
  *        Includes a list of those defined by IEEE Std 1003.1-2017.
  * @defgroup system_errno Error numbers
+ * @since 1.0.0
  * @ingroup c_std_lib
  * @{
  */

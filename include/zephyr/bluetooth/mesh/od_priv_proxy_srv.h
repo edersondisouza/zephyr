@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_od_priv_proxy_srv Bluetooth Mesh On-Demand Private GATT Proxy Server
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

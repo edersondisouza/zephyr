@@ -33,6 +33,7 @@
 /**
  * @brief Access layer
  * @defgroup bt_mesh_access Access layer
+ * @since 1.10.0
  * @ingroup bt_mesh
  * @{
  */

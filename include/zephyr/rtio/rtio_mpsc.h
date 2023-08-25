@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief RTIO Multiple Producer Single Consumer (MPSC) Queue API
  * @defgroup rtio_mpsc RTIO MPSC API
+ * @since 3.4.0
  * @ingroup rtio
  * @{
  */

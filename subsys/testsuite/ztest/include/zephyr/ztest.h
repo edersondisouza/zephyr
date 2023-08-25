@@ -15,6 +15,7 @@
 
 /**
  * @defgroup ztest Zephyr Testing Framework (ZTest)
+ * @since 1.10.0
  * @ingroup testing
  */
 

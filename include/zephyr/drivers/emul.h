@@ -11,6 +11,7 @@
 /**
  * @brief Emulators used to test drivers and higher-level code that uses them
  * @defgroup io_emulators Emulator interface
+ * @since 2.4.0
  * @ingroup testing
  * @{
  */

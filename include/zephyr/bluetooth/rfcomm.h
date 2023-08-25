@@ -13,6 +13,7 @@
 /**
  * @brief RFCOMM
  * @defgroup bt_rfcomm RFCOMM
+ * @since 1.6.0
  * @ingroup bluetooth
  * @{
  */

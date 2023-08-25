@@ -15,6 +15,7 @@
 /**
  * @brief SYSCON Interface
  * @defgroup syscon_interface SYSCON Interface
+ * @since 2.7.0
  * @ingroup io_interfaces
  * @{
  */

@@ -29,6 +29,7 @@ extern "C" {
 /**
  * @brief Networking
  * @defgroup networking Networking
+ * @since 1.0.0
  * @ingroup connectivity
  * @{
  * @}
@@ -37,6 +38,7 @@ extern "C" {
 /**
  * @brief Network core library
  * @defgroup net_core Network Core Library
+ * @since 1.5.0
  * @ingroup networking
  * @{
  */

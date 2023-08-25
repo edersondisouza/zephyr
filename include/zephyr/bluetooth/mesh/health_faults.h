@@ -13,6 +13,7 @@
 /**
  * @brief List of specification defined Health fault values.
  * @defgroup bt_mesh_health_faults Health faults
+ * @since 2.1.0
  * @ingroup bt_mesh
  * @{
  */

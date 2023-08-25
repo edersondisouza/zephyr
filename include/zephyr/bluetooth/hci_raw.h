@@ -13,6 +13,7 @@
 /**
  * @brief HCI RAW channel
  * @defgroup hci_raw HCI RAW channel
+ * @since 1.3.0
  * @ingroup bluetooth
  * @{
  */

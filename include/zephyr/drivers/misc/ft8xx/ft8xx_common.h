@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief FT8xx functions to write and read memory
  * @defgroup ft8xx_common FT8xx common functions
+ * @since 2.6.0
  * @ingroup ft8xx_interface
  * @{
  */

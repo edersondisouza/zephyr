@@ -209,6 +209,7 @@ extern "C" {
 /**
  * @brief RTC DS3231 Driver-Specific API
  * @defgroup rtc_ds3231_interface RTC DS3231 Interface
+ * @since 2.3.0
  * @ingroup io_interfaces
  * @{
  */

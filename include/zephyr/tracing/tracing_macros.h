@@ -27,6 +27,7 @@
 /**
  * @brief Tracing utility macros
  * @defgroup subsys_tracing_macros Tracing utility macros
+ * @since 2.6.0
  * @ingroup subsys_tracing
  * @{
  */

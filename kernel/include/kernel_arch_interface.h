@@ -28,6 +28,7 @@ extern "C" {
 
 /**
  * @defgroup arch-timing Architecture timing APIs
+ * @since 2.1.0
  * @{
  */
 #ifdef CONFIG_ARCH_HAS_CUSTOM_BUSY_WAIT
@@ -43,6 +44,7 @@ void arch_busy_wait(uint32_t usec_to_wait);
 
 /**
  * @defgroup arch-threads Architecture thread APIs
+ * @since 2.1.0
  * @ingroup arch-interface
  * @{
  */
@@ -212,6 +214,7 @@ int arch_float_enable(struct k_thread *thread, unsigned int options);
 
 /**
  * @defgroup arch-pm Architecture-specific power management APIs
+ * @since 2.1.0
  * @ingroup arch-interface
  * @{
  */
@@ -223,6 +226,7 @@ FUNC_NORETURN void arch_system_halt(unsigned int reason);
 
 /**
  * @defgroup arch-irq Architecture-specific IRQ APIs
+ * @since 2.1.0
  * @ingroup arch-interface
  * @{
  */
@@ -241,6 +245,7 @@ static inline bool arch_is_in_isr(void);
 
 /**
  * @defgroup arch-mmu Architecture-specific memory-mapping APIs
+ * @since 2.4.0
  * @ingroup arch-interface
  * @{
  */
@@ -527,6 +532,7 @@ uintptr_t arch_page_info_get(void *addr, uintptr_t *location,
 
 /**
  * @defgroup arch-misc Miscellaneous architecture APIs
+ * @since 1.14.0
  * @ingroup arch-interface
  * @{
  */
@@ -567,6 +573,7 @@ static inline void arch_nop(void);
 
 /**
  * @defgroup arch-coredump Architecture-specific core dump APIs
+ * @since 2.4.0
  * @ingroup arch-interface
  * @{
  */
@@ -589,6 +596,7 @@ uint16_t arch_coredump_tgt_code_get(void);
 
 /**
  * @defgroup arch-tls Architecture-specific Thread Local Storage APIs
+ * @since 2.5.0
  * @ingroup arch-interface
  * @{
  */

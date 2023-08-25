@@ -13,6 +13,7 @@
 /**
  * @brief Message
  * @defgroup bt_mesh_msg Message
+ * @since 1.9.0
  * @ingroup bt_mesh
  * @{
  */

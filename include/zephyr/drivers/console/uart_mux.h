@@ -15,6 +15,7 @@
 /**
  * @brief UART Mux Interface
  * @defgroup uart_mux_interface UART Mux Interface
+ * @since 2.3.0
  * @ingroup io_interfaces
  * @{
  */

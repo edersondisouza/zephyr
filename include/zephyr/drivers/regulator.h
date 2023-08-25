@@ -12,6 +12,7 @@
 /**
  * @brief Regulator Interface
  * @defgroup regulator_interface Regulator Interface
+ * @since 2.5.0
  * @ingroup io_interfaces
  * @{
  */
@@ -270,6 +271,7 @@ static inline int regulator_common_get_min_voltage(const struct device *dev, int
 /**
  * @brief Regulator Parent Interface
  * @defgroup regulator_parent_interface Regulator Parent Interface
+ * @since 3.3.0
  * @{
  */
 

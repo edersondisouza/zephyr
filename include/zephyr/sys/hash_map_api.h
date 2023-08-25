@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @file
  * @defgroup hashmap_apis Hashmap
+ * @since 3.4.0
  * @ingroup datastructure_apis
  *
  * @brief Hashmap (Hash Table) API

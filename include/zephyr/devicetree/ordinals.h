@@ -13,6 +13,7 @@
 
 /**
  * @defgroup devicetree-dep-ord Dependency tracking
+ * @since 2.5.0
  * @ingroup devicetree
  * @{
  */

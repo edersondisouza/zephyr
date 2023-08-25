@@ -22,12 +22,14 @@ extern "C" {
 /**
  * @brief usb_hid.h API
  * @defgroup usb_hid_class USB HID class API
+ * @since 1.11.0
  * @ingroup usb
  * @{
  */
 
 /**
  * @defgroup usb_hid_device_api HID class USB specific definitions
+ * @since 1.11.0
  * @{
  */
 

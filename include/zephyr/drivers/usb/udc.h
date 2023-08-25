@@ -286,6 +286,7 @@ struct udc_data {
 /**
  * @brief New USB device controller (UDC) driver API
  * @defgroup udc_api USB device controller driver API
+ * @since 3.3.0
  * @ingroup io_interfaces
  * @{
  */

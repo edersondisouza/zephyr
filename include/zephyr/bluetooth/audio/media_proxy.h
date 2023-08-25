@@ -10,6 +10,7 @@
 /** @brief Media proxy module
  *
  * @defgroup bt_media_proxy Media Proxy
+ * @since 3.0.0
  *
  * @ingroup bluetooth
  * @{

@@ -14,6 +14,7 @@
  * @file
  * @brief Service Discovery Protocol (SDP)
  * @defgroup bt_sdp Service Discovery Protocol (SDP)
+ * @since 1.6.0
  * @ingroup bluetooth
  * @{
  */

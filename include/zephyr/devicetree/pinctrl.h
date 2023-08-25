@@ -13,6 +13,7 @@
 
 /**
  * @defgroup devicetree-pinctrl Pin control
+ * @since 2.7.0
  * @ingroup devicetree
  * @{
  */

@@ -27,6 +27,7 @@
  * inner-working of the kernel and various other subsystems.
  *
  * @defgroup subsys_tracing Tracing
+ * @since 1.13.0
  * @ingroup os_services
  * @{
  */
@@ -34,12 +35,14 @@
 /**
  * @brief Tracing APIs
  * @defgroup subsys_tracing_apis Tracing APIs
+ * @since 1.13.0
  * @{
  */
 
 /**
  * @brief Thread Tracing APIs
  * @defgroup subsys_tracing_apis_thread Thread Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -309,6 +312,7 @@
 /**
  * @brief Work Tracing APIs
  * @defgroup subsys_tracing_apis_work Work Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -406,6 +410,7 @@
 /**
  * @brief Work Queue Tracing APIs
  * @defgroup subsys_tracing_apis_work_q Work Queue Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -458,6 +463,7 @@
 /**
  * @brief Work Delayable Tracing APIs
  * @defgroup subsys_tracing_apis_work_delayable Work Delayable Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -579,6 +585,7 @@
 /**
  * @brief Work Poll Tracing APIs
  * @defgroup subsys_tracing_apis_work_poll Work Poll Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -652,6 +659,7 @@
 /**
  * @brief Poll Tracing APIs
  * @defgroup subsys_tracing_apis_poll Poll Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -704,6 +712,7 @@
 /**
  * @brief Semaphore Tracing APIs
  * @defgroup subsys_tracing_apis_sem Semaphore Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -759,6 +768,7 @@
 /**
  * @brief Mutex Tracing APIs
  * @defgroup subsys_tracing_apis_mutex Mutex Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -807,6 +817,7 @@
 /**
  * @brief Conditional Variable Tracing APIs
  * @defgroup subsys_tracing_apis_condvar Conditional Variable Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -868,6 +879,7 @@
 /**
  * @brief Queue Tracing APIs
  * @defgroup subsys_tracing_apis_queue Queue Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1069,6 +1081,7 @@
 /**
  * @brief FIFO Tracing APIs
  * @defgroup subsys_tracing_apis_fifo FIFO Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1201,6 +1214,7 @@
 /**
  * @brief LIFO Tracing APIs
  * @defgroup subsys_tracing_apis_lifo LIFO Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1265,6 +1279,7 @@
 /**
  * @brief Stack Tracing APIs
  * @defgroup subsys_tracing_apis_stack Stack Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1340,6 +1355,7 @@
 /**
  * @brief Message Queue Tracing APIs
  * @defgroup subsys_tracing_apis_msgq Message Queue Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1437,6 +1453,7 @@
 /**
  * @brief Mailbox Tracing APIs
  * @defgroup subsys_tracing_apis_mbox Mailbox Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1530,6 +1547,7 @@
 /**
  * @brief Pipe Tracing APIs
  * @defgroup subsys_tracing_apis_pipe Pipe Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1652,6 +1670,7 @@
 /**
  * @brief Heap Tracing APIs
  * @defgroup subsys_tracing_apis_heap Heap Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1762,6 +1781,7 @@
 /**
  * @brief Memory Slab Tracing APIs
  * @defgroup subsys_tracing_apis_mslab Memory Slab Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1811,6 +1831,7 @@
 /**
  * @brief Timer Tracing APIs
  * @defgroup subsys_tracing_apis_timer Timer Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1859,6 +1880,7 @@
 /**
  * @brief Event Tracing APIs
  * @defgroup subsys_tracing_apis_event Event Tracing APIs
+ * @since 3.0.0
  * @{
  */
 
@@ -1915,6 +1937,7 @@
 /**
  * @brief System PM Tracing APIs
  * @defgroup subsys_tracing_apis_pm_system System PM Tracing APIs
+ * @since 2.6.0
  * @{
  */
 
@@ -1936,6 +1959,7 @@
 /**
  * @brief PM Device Runtime Tracing APIs
  * @defgroup subsys_tracing_apis_pm_device_runtime PM Device Runtime Tracing APIs
+ * @since 3.0.0
  * @{
  */
 

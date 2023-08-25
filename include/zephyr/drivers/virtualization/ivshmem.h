@@ -10,6 +10,7 @@
 /**
  * @brief Inter-VM Shared Memory (ivshmem) reference API
  * @defgroup ivshmem Inter-VM Shared Memory (ivshmem) reference API
+ * @since 2.5.0
  * @ingroup io_interfaces
  * @{
  */

@@ -20,6 +20,7 @@
 
 /**
  * @defgroup audio_interface Audio
+ * @since 1.13.0
  * @{
  * @}
  */
@@ -28,6 +29,7 @@
  * @brief Abstraction for digital microphones
  *
  * @defgroup audio_dmic_interface Digital Microphone Interface
+ * @since 1.13.0
  * @ingroup audio_interface
  * @{
  */

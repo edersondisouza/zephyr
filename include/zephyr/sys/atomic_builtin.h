@@ -17,6 +17,7 @@ extern "C" {
 
 /**
  * @addtogroup atomic_apis Atomic Services APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  */

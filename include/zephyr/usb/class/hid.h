@@ -23,6 +23,7 @@ extern "C" {
 /**
  * @brief hid.h API
  * @defgroup usb_hid_definitions USB HID common definitions
+ * @since 1.14.0
  * @ingroup usb
  * @{
  */
@@ -167,6 +168,7 @@ extern "C" {
 
 /**
  * @defgroup usb_hid_items USB HID Item helpers
+ * @since 1.11.0
  * @{
  */
 
@@ -417,6 +419,7 @@ extern "C" {
 
 /**
  * @defgroup usb_hid_mk_report_desc Mouse and keyboard report descriptors
+ * @since 1.14.0
  * @{
  */
 

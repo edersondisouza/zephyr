@@ -16,6 +16,7 @@
 /**
  * @brief Memory Management
  * @defgroup memory_management Memory Management
+ * @since 2.5.0
  * @ingroup os_services
  * @{
  * @}
@@ -372,10 +373,12 @@ size_t k_mem_region_align(uintptr_t *aligned_addr, size_t *aligned_size,
 
 /**
  * @defgroup demand_paging Demand Paging
+ * @since 2.5.0
  * @ingroup memory_management
  */
 /**
  * @defgroup mem-demand-paging Demand Paging APIs
+ * @since 2.5.0
  * @ingroup demand_paging
  * @{
  */
@@ -512,6 +515,7 @@ __syscall void k_mem_paging_histogram_backing_store_page_out_get(
  * Eviction algorithm APIs
  *
  * @defgroup mem-demand-paging-eviction Eviction Algorithm APIs
+ * @since 2.6.0
  * @ingroup demand_paging
  * @{
  */
@@ -547,6 +551,7 @@ void k_mem_paging_eviction_init(void);
  * Backing store APIs
  *
  * @defgroup mem-demand-paging-backing-store Backing Store APIs
+ * @since 2.6.0
  * @ingroup demand_paging
  * @{
  */

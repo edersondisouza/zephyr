@@ -16,6 +16,7 @@
  * backends can be implemented without this helper.
  *
  * @defgroup log_backend_multidomain Logger multidomain backend helpers
+ * @since 3.3.0
  * @ingroup log_backend
  * @{
  */

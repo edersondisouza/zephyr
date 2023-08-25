@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief File System APIs
  * @defgroup file_system_api File System APIs
+ * @since 1.12.0
  * @ingroup os_services
  * @{
  */

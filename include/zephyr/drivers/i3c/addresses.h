@@ -10,6 +10,7 @@
 /**
  * @brief I3C Address-related Helper Code
  * @defgroup i3c_addresses I3C Address-related Helper Code
+ * @since 3.2.0
  * @ingroup i3c_interface
  * @{
  */

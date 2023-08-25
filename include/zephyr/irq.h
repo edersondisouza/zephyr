@@ -24,6 +24,7 @@ extern "C" {
 
 /**
  * @defgroup isr_apis Interrupt Service Routine APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  */

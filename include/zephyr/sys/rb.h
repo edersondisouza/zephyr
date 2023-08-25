@@ -7,6 +7,7 @@
 /**
  * @file
  * @defgroup rbtree_apis Balanced Red/Black Tree
+ * @since 1.12.0
  * @ingroup datastructure_apis
  *
  * @brief Balanced Red/Black Tree implementation

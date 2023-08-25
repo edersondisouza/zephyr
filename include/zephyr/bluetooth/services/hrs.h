@@ -10,6 +10,7 @@
 /**
  * @brief Heart Rate Service (HRS)
  * @defgroup bt_hrs Heart Rate Service (HRS)
+ * @since 2.4.0
  * @ingroup bluetooth
  * @{
  *

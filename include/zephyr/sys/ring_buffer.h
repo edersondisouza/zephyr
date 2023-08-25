@@ -44,6 +44,7 @@ struct ring_buf {
 /**
  * @file
  * @defgroup ring_buffer_apis Ring Buffer APIs
+ * @since 1.14.0
  * @ingroup datastructure_apis
  *
  * @brief Simple ring buffer implementation.

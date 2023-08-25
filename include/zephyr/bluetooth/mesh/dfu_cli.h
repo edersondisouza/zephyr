@@ -7,6 +7,7 @@
 /**
  * @file
  * @defgroup bt_mesh_dfu_cli Firmware Uppdate Client model
+ * @since 3.4.0
  * @ingroup bt_mesh_dfu
  * @{
  * @brief API for the Bluetooth mesh Firmware Update Client model

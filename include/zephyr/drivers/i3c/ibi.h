@@ -10,6 +10,7 @@
 /**
  * @brief I3C In-Band Interrupts
  * @defgroup i3c_ibi I3C In-Band Interrupts
+ * @since 3.2.0
  * @ingroup i3c_interface
  * @{
  */

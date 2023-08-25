@@ -4,6 +4,7 @@
  * Updated to the Media Control Profile specification revision 1.0
  *
  * @defgroup bt_gatt_mcc Media Control Client (MCC)
+ * @since 3.0.0
  *
  * @ingroup bluetooth
  * @{

@@ -6,6 +6,7 @@
 
 /**
  * @defgroup arch-interface Architecture Interface
+ * @since 1.14.0
  * @brief Internal kernel APIs with public scope
  *
  * Any public kernel APIs that are implemented as inline functions and need to
@@ -47,6 +48,7 @@ typedef void (*k_thread_entry_t)(void *p1, void *p2, void *p3);
 
 /**
  * @defgroup arch-timing Architecture timing APIs
+ * @since 2.1.0
  * @ingroup arch-interface
  * @{
  */
@@ -440,6 +442,7 @@ void arch_irq_offload(irq_offload_routine_t routine, const void *parameter);
 
 /**
  * @defgroup arch-smp Architecture-specific SMP APIs
+ * @since 2.1.0
  * @ingroup arch-interface
  * @{
  */
@@ -493,6 +496,7 @@ static inline unsigned int arch_num_cpus(void);
 
 /**
  * @defgroup arch-userspace Architecture-specific userspace APIs
+ * @since 2.1.0
  * @ingroup arch-interface
  * @{
  */
@@ -905,6 +909,7 @@ static inline void arch_cohere_stacks(struct k_thread *old_thread,
 
 /**
  * @defgroup arch-gdbstub Architecture-specific gdbstub APIs
+ * @since 2.4.0
  * @ingroup arch-interface
  * @{
  */

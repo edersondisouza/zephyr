@@ -10,6 +10,7 @@
 /**
  * @brief Object Transfer Service (OTS)
  * @defgroup bt_ots Object Transfer Service (OTS)
+ * @since 2.4.0
  * @ingroup bluetooth
  * @{
  *

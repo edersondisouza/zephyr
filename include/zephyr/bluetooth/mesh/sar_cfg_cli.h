@@ -16,6 +16,7 @@
 /**
  * @brief Bluetooth Mesh
  * @defgroup bt_mesh_sar_cfg_cli Bluetooth Mesh SAR Configuration Client Model
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

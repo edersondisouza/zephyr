@@ -19,6 +19,7 @@
 /**
  * @brief Provisioning
  * @defgroup bt_mesh_prov Provisioning
+ * @since 1.10.0
  * @ingroup bt_mesh
  * @{
  */
@@ -552,6 +553,7 @@ bool bt_mesh_is_provisioned(void);
 /**
  * @brief Bluetooth mesh
  * @defgroup bt_mesh Bluetooth mesh
+ * @since 1.10.0
  * @ingroup bluetooth
  * @{
  */

@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_sol_pdu_rpl_cli Bluetooth Mesh Solicitation PDU RPL Client
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

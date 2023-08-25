@@ -45,6 +45,7 @@ extern "C" {
 /**
  * @brief Ethernet support functions
  * @defgroup ethernet Ethernet Support Functions
+ * @since 1.11.0
  * @ingroup networking
  * @{
  */

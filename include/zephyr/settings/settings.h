@@ -21,6 +21,7 @@ extern "C" {
 
 /**
  * @defgroup file_system_storage File System Storage
+ * @since 1.11.0
  * @ingroup os_services
  * @{
  * @}
@@ -28,6 +29,7 @@ extern "C" {
 
 /**
  * @defgroup settings Settings
+ * @since 1.12.0
  * @ingroup file_system_storage
  * @{
  */
@@ -351,6 +353,7 @@ int settings_commit_subtree(const char *subtree);
 
 /**
  * @defgroup settings_backend Settings backend interface
+ * @since 1.12.0
  * @ingroup settings
  * @{
  */
@@ -507,6 +510,7 @@ int settings_call_set_handler(const char *name,
 
 /**
  * @defgroup settings_name_proc Settings name processing
+ * @since 2.0.0
  * @brief API for const name processing
  * @ingroup settings
  * @{
@@ -553,6 +557,7 @@ int settings_name_next(const char *name, const char **next);
 
 /**
  * @defgroup settings_rt Settings subsystem runtime
+ * @since 2.0.0
  * @brief API for runtime settings
  * @ingroup settings
  * @{

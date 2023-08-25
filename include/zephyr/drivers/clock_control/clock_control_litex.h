@@ -15,6 +15,7 @@
 /**
  * @brief LiteX Clock Control driver interface
  * @defgroup clock_control_litex_interface LiteX Clock Control driver interface
+ * @since 2.5.0
  * @brief LiteX Clock Control driver interface
  * @ingroup clock_control_interface
  * @{

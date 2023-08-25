@@ -39,6 +39,7 @@ typedef uint32_t log_timestamp_t;
 /**
  * @brief Log message API
  * @defgroup log_msg Log message API
+ * @since 1.13.0
  * @ingroup logger
  * @{
  */

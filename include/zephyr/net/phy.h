@@ -16,6 +16,7 @@
 /**
  * @brief Ethernet PHY Interface
  * @defgroup ethernet_phy Ethernet PHY Interface
+ * @since 1.7.99
  * @ingroup networking
  * @{
  */

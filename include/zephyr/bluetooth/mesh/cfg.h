@@ -18,6 +18,7 @@
 /**
  * @brief Runtime Configuration
  * @defgroup bt_mesh_cfg Runtime Configuration
+ * @since 1.9.0
  * @ingroup bt_mesh
  * @{
  */
@@ -308,6 +309,7 @@ enum bt_mesh_feat_state bt_mesh_friend_get(void);
 /**
  * @brief Subnet Configuration
  * @defgroup bt_mesh_cfg_subnet Subnet Configuration
+ * @since 1.12.0
  * @{
  */
 
@@ -509,6 +511,7 @@ ssize_t bt_mesh_subnets_get(uint16_t net_idxs[], size_t max, off_t skip);
 /**
  * @brief Application Configuration
  * @defgroup bt_mesh_cfg_app Application Configuration
+ * @since 1.12.0
  * @{
  */
 

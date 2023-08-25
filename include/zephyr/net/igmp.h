@@ -14,6 +14,7 @@
 /**
  * @brief IGMP (Internet Group Management Protocol)
  * @defgroup igmp IGMP API
+ * @since 2.6.0
  * @ingroup networking
  * @{
  */

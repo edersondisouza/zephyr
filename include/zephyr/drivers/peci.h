@@ -15,6 +15,7 @@
 /**
  * @brief PECI Interface 3.0
  * @defgroup peci_interface PECI Interface
+ * @since 2.3.0
  * @ingroup io_interfaces
  * @{
  */

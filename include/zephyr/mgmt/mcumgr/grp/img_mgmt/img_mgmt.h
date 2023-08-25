@@ -17,6 +17,7 @@
 /**
  * @brief MCUmgr img_mgmt API
  * @defgroup mcumgr_img_mgmt MCUmgr img_mgmt API
+ * @since 1.11.0
  * @ingroup mcumgr
  * @{
  */

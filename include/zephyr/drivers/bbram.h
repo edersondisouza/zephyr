@@ -14,6 +14,7 @@
 /**
  * @brief BBRAM Interface
  * @defgroup bbram_interface BBRAM Interface
+ * @since 2.7.0
  * @ingroup io_interfaces
  * @{
  */

@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup version_apis Version APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  *

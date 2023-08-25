@@ -22,6 +22,7 @@
 /**
  * @brief SPI Emulation Interface
  * @defgroup spi_emul_interface SPI Emulation Interface
+ * @since 2.5.0
  * @ingroup io_emulators
  * @{
  */

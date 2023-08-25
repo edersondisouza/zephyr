@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief CAN Interface
  * @defgroup can_interface CAN Interface
+ * @since 1.12.0
  * @ingroup io_interfaces
  * @{
  */

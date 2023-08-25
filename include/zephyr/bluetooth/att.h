@@ -13,6 +13,7 @@
 /**
  * @brief Attribute Protocol (ATT)
  * @defgroup bt_att Attribute Protocol (ATT)
+ * @since 1.0.0
  * @ingroup bluetooth
  * @{
  */

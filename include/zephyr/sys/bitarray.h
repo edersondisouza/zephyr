@@ -21,6 +21,7 @@ extern "C" {
  * @file
  *
  * @defgroup bitarray_apis Bit array
+ * @since 2.6.0
  * @ingroup datastructure_apis
  *
  * @brief Store and manipulate bits in a bit array.

@@ -15,6 +15,7 @@
 /**
  * @brief Video Interface
  * @defgroup video_interface Video Interface
+ * @since 2.1.0
  * @ingroup io_interfaces
  * @{
  */
@@ -582,6 +583,7 @@ void video_buffer_release(struct video_buffer *buf);
 
 /**
  * @defgroup video_pixel_formats Video pixel formats
+ * @since 2.1.0
  * @{
  */
 

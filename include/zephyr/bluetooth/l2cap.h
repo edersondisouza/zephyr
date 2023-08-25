@@ -14,6 +14,7 @@
 /**
  * @brief L2CAP
  * @defgroup bt_l2cap L2CAP
+ * @since 1.0.0
  * @ingroup bluetooth
  * @{
  */

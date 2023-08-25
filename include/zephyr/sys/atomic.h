@@ -47,6 +47,7 @@ typedef atomic_ptr_t atomic_ptr_val_t;
 
 /**
  * @defgroup atomic_apis Atomic Services APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  */

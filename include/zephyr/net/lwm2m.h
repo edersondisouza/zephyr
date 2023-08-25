@@ -8,6 +8,7 @@
 /** @file lwm2m.h
  *
  * @defgroup lwm2m_api LwM2M high-level API
+ * @since 1.10.0
  * @ingroup networking
  * @{
  * @brief LwM2M high-level API

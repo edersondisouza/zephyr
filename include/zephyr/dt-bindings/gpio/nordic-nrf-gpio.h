@@ -9,6 +9,7 @@
 /**
  * @brief nRF-specific GPIO Flags
  * @defgroup gpio_interface_nrf nRF-specific GPIO Flags
+ * @since 3.2.0
  * @ingroup gpio_interface
  * @{
  */

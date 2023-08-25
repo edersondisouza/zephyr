@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief System and device power management
  * @defgroup subsys_pm Power Management (PM)
+ * @since 2.5.0
  * @ingroup os_services
  * @{
  * @}
@@ -29,6 +30,7 @@ extern "C" {
 /**
  * @brief System Power Management API
  * @defgroup subsys_pm_sys System
+ * @since 2.5.0
  * @ingroup subsys_pm
  * @{
  */
@@ -121,6 +123,7 @@ const struct pm_state_info *pm_state_next_get(uint8_t cpu);
 /**
  * @brief System Power Management Hooks
  * @defgroup subsys_pm_sys_hooks Hooks
+ * @since 2.7.0
  * @ingroup subsys_pm_sys
  * @{
  */

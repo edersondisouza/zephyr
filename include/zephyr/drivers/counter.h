@@ -16,6 +16,7 @@
 /**
  * @brief Counter Interface
  * @defgroup counter_interface Counter Interface
+ * @since 1.14.0
  * @ingroup io_interfaces
  * @{
  */
@@ -33,6 +34,7 @@ extern "C" {
 #endif
 
 /**@defgroup COUNTER_FLAGS Counter device capabilities
+ * @since 2.0.0
  * @{ */
 
 /**
@@ -43,6 +45,7 @@ extern "C" {
 /**@} */
 
 /**@defgroup COUNTER_TOP_FLAGS Flags used by @ref counter_top_cfg.
+ * @since 2.0.0
  * @{
  */
 
@@ -65,6 +68,7 @@ extern "C" {
 /**@} */
 
 /**@defgroup COUNTER_ALARM_FLAGS Alarm configuration flags
+ * @since 2.0.0
  *
  * @brief Used in alarm configuration structure (@ref counter_alarm_cfg).
  * @{ */
@@ -88,6 +92,7 @@ extern "C" {
 /**@} */
 
 /**@defgroup COUNTER_GUARD_PERIOD_FLAGS Counter guard period flags
+ * @since 2.0.0
  *
  * @brief Used by @ref counter_set_guard_period and
  *	  @ref counter_get_guard_period.

@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief Multi producer, single consumer packet header
  * @defgroup mpsc_packet MPSC (Multi producer, single consumer) packet header
+ * @since 2.6.0
  * @ingroup mpsc_buf
  * @{
  */

@@ -14,6 +14,7 @@
 /**
  * @brief Byteorder
  * @defgroup bt_byteorder Byteorder
+ * @since 3.4.0
  * @ingroup bluetooth
  * @{
  */

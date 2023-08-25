@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_large_comp_data_srv Large Composition Data Server model
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

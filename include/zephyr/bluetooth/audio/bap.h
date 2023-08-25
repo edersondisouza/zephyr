@@ -13,6 +13,7 @@
 /**
  * @brief Bluetooth Basic Audio Profile (BAP)
  * @defgroup bt_bap Bluetooth Basic Audio Profile
+ * @since 3.0.0
  * @ingroup bluetooth
  * @{
  */
@@ -793,6 +794,7 @@ int bt_bap_stream_get_tx_sync(struct bt_bap_stream *stream, struct bt_iso_tx_inf
 
 /**
  * @defgroup bt_bap_unicast_server BAP Unicast Server APIs
+ * @since 3.4.0
  * @ingroup bt_bap
  * @{
  */
@@ -1003,6 +1005,7 @@ int bt_bap_unicast_server_config_ase(struct bt_conn *conn, struct bt_bap_stream 
 
 /**
  * @defgroup bt_bap_unicast_client BAP Unicast Client APIs
+ * @since 3.4.0
  * @ingroup bt_bap
  * @{
  */
@@ -1306,6 +1309,7 @@ int bt_bap_unicast_client_discover(struct bt_conn *conn, enum bt_audio_dir dir);
 /**
  * @brief BAP Broadcast APIs
  * @defgroup bt_bap_broadcast BAP Broadcast  APIs
+ * @since 3.4.0
  * @ingroup bt_bap
  * @{
  */
@@ -1365,6 +1369,7 @@ int bt_bap_decode_base(struct bt_data *data, struct bt_bap_base *base);
 /**
  * @brief BAP Broadcast Source APIs
  * @defgroup bt_bap_broadcast_source BAP Broadcast Source APIs
+ * @since 3.4.0
  * @ingroup bt_bap_broadcast
  * @{
  */
@@ -1561,6 +1566,7 @@ int bt_bap_broadcast_source_get_base(struct bt_bap_broadcast_source *source,
 /**
  * @brief BAP Broadcast Sink APIs
  * @defgroup bt_bap_broadcast_sink BAP Broadcast Sink APIs
+ * @since 3.4.0
  * @ingroup bt_bap_broadcast
  * @{
  */

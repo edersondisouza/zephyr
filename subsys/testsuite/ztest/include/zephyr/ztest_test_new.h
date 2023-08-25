@@ -346,6 +346,7 @@ extern struct k_mem_partition ztest_mem_partition;
 
 /**
  * @defgroup ztest_test Ztest testing macros
+ * @since 1.12.0
  * @ingroup ztest
  *
  * This module eases the testing process by providing helpful macros and other

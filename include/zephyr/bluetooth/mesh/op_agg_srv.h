@@ -15,6 +15,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_op_agg_srv Opcodes Aggregator Server model
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

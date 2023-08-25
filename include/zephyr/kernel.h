@@ -38,6 +38,7 @@ BUILD_ASSERT(sizeof(intptr_t) == sizeof(long));
 /**
  * @brief Kernel APIs
  * @defgroup kernel_apis Kernel APIs
+ * @since 1.0.0
  * @{
  * @}
  */
@@ -154,6 +155,7 @@ extern void k_thread_foreach_unlocked(
 
 /**
  * @defgroup thread_apis Thread APIs
+ * @since 1.10.0
  * @ingroup kernel_apis
  * @{
  */
@@ -1484,6 +1486,7 @@ struct k_timer {
 
 /**
  * @defgroup timer_apis Timer APIs
+ * @since 1.6.0
  * @ingroup kernel_apis
  * @{
  */
@@ -1852,6 +1855,7 @@ extern void *z_queue_node_peek(sys_sfnode_t *node, bool needs_free);
 
 /**
  * @defgroup queue_apis Queue APIs
+ * @since 1.12.0
  * @ingroup kernel_apis
  * @{
  */
@@ -2140,6 +2144,7 @@ struct z_futex_data {
 
 /**
  * @defgroup futex_apis FUTEX APIs
+ * @since 2.0.0
  * @ingroup kernel_apis
  * @{
  */
@@ -2187,6 +2192,7 @@ __syscall int k_futex_wake(struct k_futex *futex, bool wake_all);
 
 /**
  * @defgroup event_apis Event APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  */
@@ -2376,6 +2382,7 @@ struct k_fifo {
 
 /**
  * @defgroup fifo_apis FIFO APIs
+ * @since 1.12.0
  * @ingroup kernel_apis
  * @{
  */
@@ -2611,6 +2618,7 @@ struct k_lifo {
 
 /**
  * @defgroup lifo_apis LIFO APIs
+ * @since 1.12.0
  * @ingroup kernel_apis
  * @{
  */
@@ -2743,6 +2751,7 @@ struct k_stack {
 
 /**
  * @defgroup stack_apis Stack APIs
+ * @since 1.12.0
  * @ingroup kernel_apis
  * @{
  */
@@ -2862,6 +2871,7 @@ extern struct k_work_q k_sys_work_q;
 
 /**
  * @defgroup mutex_apis Mutex APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  */
@@ -2989,6 +2999,7 @@ struct k_condvar {
 
 /**
  * @defgroup condvar_apis Condition Variables APIs
+ * @since 2.5.0
  * @ingroup kernel_apis
  * @{
  */
@@ -3084,6 +3095,7 @@ struct k_sem {
 
 /**
  * @defgroup semaphore_apis Semaphore APIs
+ * @since 1.6.0
  * @ingroup kernel_apis
  * @{
  */
@@ -3211,6 +3223,7 @@ struct k_work_sync;
 
 /**
  * @defgroup workqueue_apis Work Queue APIs
+ * @since 1.6.0
  * @ingroup kernel_apis
  * @{
  */
@@ -4347,6 +4360,7 @@ extern int k_work_poll_cancel(struct k_work_poll *work);
 
 /**
  * @defgroup msgq_apis Message Queue APIs
+ * @since 1.12.0
  * @ingroup kernel_apis
  * @{
  */
@@ -4638,6 +4652,7 @@ static inline uint32_t z_impl_k_msgq_num_used_get(struct k_msgq *msgq)
 
 /**
  * @defgroup mailbox_apis Mailbox APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  */
@@ -4796,6 +4811,7 @@ extern void k_mbox_data_get(struct k_mbox_msg *rx_msg, void *buffer);
 
 /**
  * @defgroup pipe_apis Pipe APIs
+ * @since 1.0.0
  * @ingroup kernel_apis
  * @{
  */
@@ -5038,6 +5054,7 @@ struct k_mem_slab {
 
 /**
  * @defgroup mem_slab_apis Memory Slab APIs
+ * @since 1.6.0
  * @ingroup kernel_apis
  * @{
  */
@@ -5393,6 +5410,7 @@ void k_heap_free(struct k_heap *h, void *mem);
 
 /**
  * @defgroup heap_apis Heap APIs
+ * @since 1.10.0
  * @ingroup kernel_apis
  * @{
  */
@@ -5531,6 +5549,7 @@ enum _poll_states_bits {
 
 /**
  * @defgroup poll_apis Async polling APIs
+ * @since 1.12.0
  * @ingroup kernel_apis
  * @{
  */
@@ -5779,6 +5798,7 @@ extern void z_handle_obj_poll_events(sys_dlist_t *events, uint32_t state);
 
 /**
  * @defgroup cpu_idle_apis CPU Idling APIs
+ * @since 1.7.99
  * @ingroup kernel_apis
  * @{
  */

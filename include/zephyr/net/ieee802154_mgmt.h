@@ -24,6 +24,7 @@ extern "C" {
 /**
  * @brief IEEE 802.15.4 net management library
  * @defgroup ieee802154_mgmt IEEE 802.15.4 Net Management Library
+ * @since 1.7.99
  * @ingroup networking
  * @{
  */

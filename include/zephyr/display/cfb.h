@@ -23,6 +23,7 @@ extern "C" {
 /**
  * @brief Public Monochrome Character Framebuffer API
  * @defgroup monochrome_character_framebuffer Monochrome Character Framebuffer
+ * @since 1.14.0
  * @ingroup utilities
  * @{
  */

@@ -16,6 +16,7 @@ extern "C" {
 /**
  * @brief Tracing format APIs
  * @defgroup subsys_tracing_format_apis Tracing format APIs
+ * @since 2.2.0
  * @ingroup subsys_tracing
  * @{
  */

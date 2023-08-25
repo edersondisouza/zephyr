@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief Trickle algorithm library
  * @defgroup trickle Trickle Algorithm Library
+ * @since 1.7.99
  * @ingroup networking
  * @{
  */

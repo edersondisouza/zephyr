@@ -11,6 +11,7 @@
  * @brief Volume Control Profile (VCP)
  *
  * @defgroup bt_gatt_vcp Volume Control Profile (VCP)
+ * @since 3.3.0
  *
  * @ingroup bluetooth
  * @{

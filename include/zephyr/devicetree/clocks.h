@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup devicetree-clocks Devicetree Clocks API
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */

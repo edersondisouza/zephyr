@@ -20,11 +20,13 @@ extern "C" {
 /**
  * @ingroup math_dsp
  * @defgroup math_dsp_basic Basic Math Functions
+ * @since 3.3.0
  */
 
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_mult Vector Multiplication
+ * @since 3.3.0
  *
  * Element-by-element multiplication of two vectors.
  * <pre>
@@ -96,6 +98,7 @@ DSP_FUNC_SCOPE void zdsp_mult_f32(const DSP_DATA float32_t *src_a, const DSP_DAT
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_add Vector Addition
+ * @since 3.3.0
  *
  * Element-by-element addition of two vectors.
  * <pre>
@@ -167,6 +170,7 @@ DSP_FUNC_SCOPE void zdsp_add_q31(const DSP_DATA q31_t *src_a, const DSP_DATA q31
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_sub Vector Subtraction
+ * @since 3.3.0
  *
  * Element-by-element subtraction of two vectors.
  * <pre>
@@ -238,6 +242,7 @@ DSP_FUNC_SCOPE void zdsp_sub_q31(const DSP_DATA q31_t *src_a, const DSP_DATA q31
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_scale Vector Scale
+ * @since 3.3.0
  *
  * Multiply a vector by a scalar value. For floating-point data, the algorithm used is:
  * <pre>
@@ -329,6 +334,7 @@ DSP_FUNC_SCOPE void zdsp_scale_q31(const DSP_DATA q31_t *src, q31_t scale_fract,
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_abs Vector Absolute Value
+ * @since 3.3.0
  *
  * Computes the absolute value of a vector on an element-by-element basis.
  * <pre>
@@ -398,6 +404,7 @@ DSP_FUNC_SCOPE void zdsp_abs_q31(const DSP_DATA q31_t *src, DSP_DATA q31_t *dst,
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_dot Vector Dot Product
+ * @since 3.3.0
  *
  * Computes the dot product of two vectors. The vectors are multiplied element-by-element and then
  * summed.
@@ -478,6 +485,7 @@ DSP_FUNC_SCOPE void zdsp_dot_prod_q31(const DSP_DATA q31_t *src_a, const DSP_DAT
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_shift Vector Shift
+ * @since 3.3.0
  *
  * Shifts the elements of a fixed-point vector by a specified number of bits.
  * There are separate functions for Q7, Q15, and Q31 data types. The underlying algorithm used is:
@@ -547,6 +555,7 @@ DSP_FUNC_SCOPE void zdsp_shift_q31(const DSP_DATA q31_t *src, int8_t shift_bits,
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_offset Vector Offset
+ * @since 3.3.0
  *
  * Adds a constant offset to each element of a vector.
  * <pre>
@@ -621,6 +630,7 @@ DSP_FUNC_SCOPE void zdsp_offset_q31(const DSP_DATA q31_t *src, q31_t offset, DSP
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_negate Vector Negate
+ * @since 3.3.0
  *
  * Negates the elements of a vector.
  * <pre>
@@ -691,6 +701,7 @@ DSP_FUNC_SCOPE void zdsp_negate_q31(const DSP_DATA q31_t *src, DSP_DATA q31_t *d
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_and Vector bitwise AND
+ * @since 3.3.0
  *
  * Compute the logical bitwise AND.
  *
@@ -735,6 +746,7 @@ DSP_FUNC_SCOPE void zdsp_and_u32(const DSP_DATA uint32_t *src_a, const DSP_DATA 
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_or Vector bitwise OR
+ * @since 3.3.0
  *
  * Compute the logical bitwise OR.
  *
@@ -779,6 +791,7 @@ DSP_FUNC_SCOPE void zdsp_or_u32(const DSP_DATA uint32_t *src_a, const DSP_DATA u
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_not Vector bitwise NOT
+ * @since 3.3.0
  *
  * Compute the logical bitwise NOT.
  *
@@ -820,6 +833,7 @@ DSP_FUNC_SCOPE void zdsp_not_u32(const DSP_DATA uint32_t *src, DSP_DATA uint32_t
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_xor Vector bitwise XOR
+ * @since 3.3.0
  *
  * Compute the logical bitwise XOR.
  *
@@ -864,6 +878,7 @@ DSP_FUNC_SCOPE void zdsp_xor_u32(const DSP_DATA uint32_t *src_a, const DSP_DATA 
 /**
  * @ingroup math_dsp_basic
  * @addtogroup math_dsp_basic_clip Vector Clipping
+ * @since 3.3.0
  *
  * Element-by-element clipping of a value.
  *

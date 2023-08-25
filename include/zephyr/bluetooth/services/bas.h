@@ -11,6 +11,7 @@
 /**
  * @brief Battery Service (BAS)
  * @defgroup bt_bas Battery Service (BAS)
+ * @since 2.4.0
  * @ingroup bluetooth
  * @{
  *

@@ -30,6 +30,7 @@
  * - _track_list_k_event
  *
  * @defgroup subsys_tracing_object_tracking Object tracking
+ * @since 3.0.0
  * @ingroup subsys_tracing
  * @{
  */

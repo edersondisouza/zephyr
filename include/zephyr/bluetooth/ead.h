@@ -14,6 +14,7 @@
 /**
  * @brief Encrypted Advertising Data (EAD)
  * @defgroup bt_ead Encrypted Advertising Data (EAD)
+ * @since 3.4.0
  * @ingroup bluetooth
  * @{
  */

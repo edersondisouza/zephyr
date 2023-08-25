@@ -26,6 +26,7 @@ extern "C" {
 
 /**
  * @defgroup ztest_ztress Ztest ztress macros
+ * @since 3.0.0
  * @ingroup ztest
  *
  * This module provides test stress when using Ztest.

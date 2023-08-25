@@ -10,6 +10,7 @@
 /**
  * @brief I3C Devicetree related bits
  * @defgroup i3c_devicetree I3C Devicetree related bits
+ * @since 3.2.0
  * @ingroup i3c_interface
  * @{
  */

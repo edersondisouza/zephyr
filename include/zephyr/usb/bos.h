@@ -13,6 +13,7 @@
 /**
  * @brief USB Binary Device Object Store support
  * @defgroup usb_bos USB BOS support
+ * @since 1.12.0
  * @ingroup usb
  * @{
  */

@@ -18,6 +18,7 @@ extern "C" {
 /**
  * @brief Logging
  * @defgroup logging Logging
+ * @since 1.0.0
  * @ingroup os_services
  * @{
  * @}
@@ -26,6 +27,7 @@ extern "C" {
 /**
  * @brief Logger API
  * @defgroup log_api Logging API
+ * @since 1.13.0
  * @ingroup logger
  * @{
  */

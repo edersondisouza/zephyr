@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief Memory Management Driver APIs
  * @defgroup mm_drv_apis Memory Management Driver APIs
+ * @since 3.0.0
  * @ingroup memory_management
  * @{
  */

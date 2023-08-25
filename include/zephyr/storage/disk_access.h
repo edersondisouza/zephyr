@@ -17,6 +17,7 @@
 /**
  * @brief Storage APIs
  * @defgroup storage_apis Storage APIs
+ * @since 1.11.0
  * @ingroup os_services
  * @{
  * @}
@@ -25,6 +26,7 @@
 /**
  * @brief Disk Access APIs
  * @defgroup disk_access_interface Disk Access Interface
+ * @since 1.6.0
  * @ingroup storage_apis
  * @{
  */

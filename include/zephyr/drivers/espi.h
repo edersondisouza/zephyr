@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief eSPI Driver APIs
  * @defgroup espi_interface ESPI Driver APIs
+ * @since 2.0.0
  * @ingroup io_interfaces
  * @{
  */

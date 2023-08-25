@@ -73,6 +73,7 @@ struct sys_notify;
 
 /**
  * @defgroup sys_notify_apis Asynchronous Notification APIs
+ * @since 2.3.0
  * @ingroup kernel_apis
  * @{
  */

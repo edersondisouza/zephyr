@@ -17,6 +17,7 @@ extern "C" {
 
 /**
  * @defgroup bt_mesh_rpr_cli Remote Provisioning Client model
+ * @since 3.4.0
  * @ingroup bt_mesh
  * @{
  */

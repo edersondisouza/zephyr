@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @file
  * @defgroup timeutil_unit_apis Time Units Helpers
+ * @since 1.0.0
  * @ingroup timeutil_apis
  *
  * @brief Various helper APIs for converting between time units.

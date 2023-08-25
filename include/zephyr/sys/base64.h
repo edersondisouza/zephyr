@@ -35,6 +35,7 @@ extern "C" {
  * @file
  *
  * @defgroup base64 Base64
+ * @since 1.5.0
  * @brief Base64 encoding/decoding functions
  * @ingroup utilities
  * @{

@@ -11,6 +11,7 @@
  * @file
  * @brief Public LoRaWAN APIs
  * @defgroup lorawan_api LoRaWAN APIs
+ * @since 2.5.0
  * @ingroup connectivity
  * @{
  */

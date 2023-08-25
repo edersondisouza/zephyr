@@ -11,6 +11,7 @@
  * @brief Microphone Control Profile (MICP)
  *
  * @defgroup bt_gatt_micp Microphone Control Profile (MICP)
+ * @since 3.2.0
  *
  * @ingroup bluetooth
  * @{

@@ -16,6 +16,7 @@
  *
  * @brief public Semihosting APIs based on ARM definitions.
  * @defgroup semihost Semihosting APIs
+ * @since 3.1.0
  * @ingroup os_services
  * @{
  */

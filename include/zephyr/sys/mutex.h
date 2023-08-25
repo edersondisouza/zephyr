@@ -35,6 +35,7 @@ struct sys_mutex {
 
 /**
  * @defgroup user_mutex_apis User mode mutex APIs
+ * @since 1.14.0
  * @ingroup kernel_apis
  * @{
  */

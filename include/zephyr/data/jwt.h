@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief JSON Web Token (JWT)
  * @defgroup jwt JSON Web Token (JWT)
+ * @since 1.14.0
  * @ingroup json
  * @{
  */

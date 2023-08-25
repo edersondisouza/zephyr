@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @ingroup hashmap_apis
  * @defgroup hash_functions Hash Functions
+ * @since 3.4.0
  * @{
  */
 

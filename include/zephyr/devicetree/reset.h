@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup devicetree-reset-controller Devicetree Reset Controller API
+ * @since 3.1.0
  * @ingroup devicetree
  * @{
  */

@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief FT8xx co-processor engine functions
  * @defgroup ft8xx_copro FT8xx co-processor
+ * @since 2.6.0
  * @ingroup ft8xx_interface
  * @{
  */

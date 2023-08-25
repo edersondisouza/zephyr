@@ -9,6 +9,7 @@
 
 /**
  * @defgroup regulator_npm6001 NPM6001 Devicetree helpers.
+ * @since 3.3.0
  * @ingroup regulator_interface
  * @{
  */

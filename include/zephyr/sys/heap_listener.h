@@ -19,6 +19,7 @@ extern "C" {
 
 /**
  * @defgroup heap_listener_apis Heap Listener APIs
+ * @since 3.0.0
  * @ingroup heaps
  * @{
  */

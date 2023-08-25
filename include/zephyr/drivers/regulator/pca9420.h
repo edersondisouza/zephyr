@@ -12,6 +12,7 @@ extern "C" {
 
 /**
  * @defgroup regulator_parent_pca9420 PCA9420 Utilities.
+ * @since 3.3.0
  * @ingroup regulator_parent_interface
  * @{
  */

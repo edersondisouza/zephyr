@@ -10,6 +10,7 @@
 /**
  * @brief Input Interface
  * @defgroup input_interface Input Interface
+ * @since 3.4.0
  * @ingroup io_interfaces
  * @{
  */

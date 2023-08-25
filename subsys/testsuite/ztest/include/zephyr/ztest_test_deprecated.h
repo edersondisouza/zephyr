@@ -122,6 +122,7 @@ int z_ztest_run_test_suite(const char *name, struct unit_test *suite);
 
 /**
  * @defgroup ztest_test_deprecated Ztest testing macros
+ * @since 1.10.0
  * @ingroup ztest
  *
  * This module eases the testing process by providing helpful macros and other

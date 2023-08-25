@@ -13,6 +13,7 @@
 /**
  * @brief Bluetooth Controller
  * @defgroup bt_ctrl Bluetooth Controller
+ * @since 1.14.0
  * @ingroup bluetooth
  * @{
  */

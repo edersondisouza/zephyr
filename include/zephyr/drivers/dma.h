@@ -24,6 +24,7 @@ extern "C" {
 /**
  * @brief DMA Interface
  * @defgroup dma_interface DMA Interface
+ * @since 1.14.0
  * @ingroup io_interfaces
  * @{
  */

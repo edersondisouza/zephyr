@@ -21,6 +21,7 @@
 /**
  * @brief I2C Emulation Interface
  * @defgroup i2c_emul_interface I2C Emulation Interface
+ * @since 2.4.0
  * @ingroup io_emulators
  * @{
  */

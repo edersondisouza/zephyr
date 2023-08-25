@@ -27,6 +27,7 @@
 /**
  * @brief devicetree.h API
  * @defgroup devicetree Devicetree
+ * @since 2.0.0
  * @{
  * @}
  */
@@ -70,6 +71,7 @@
 
 /**
  * @defgroup devicetree-generic-id Node identifiers and helpers
+ * @since 2.0.0
  * @ingroup devicetree
  * @{
  */
@@ -577,6 +579,7 @@
 
 /**
  * @defgroup devicetree-generic-prop Property accessors
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */
@@ -1609,6 +1612,7 @@
 
 /**
  * @defgroup devicetree-ranges-prop ranges property
+ * @since 3.0.0
  * @ingroup devicetree
  * @{
  */
@@ -1996,6 +2000,7 @@
 
 /**
  * @defgroup devicetree-generic-vendor Vendor and model name helpers
+ * @since 3.2.0
  * @ingroup devicetree
  * @{
  */
@@ -2164,6 +2169,7 @@
 
 /**
  * @defgroup devicetree-reg-prop reg property
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */
@@ -2283,6 +2289,7 @@
 
 /**
  * @defgroup devicetree-interrupts-prop interrupts property
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */
@@ -2427,6 +2434,7 @@
 
 /**
  * @defgroup devicetree-generic-chosen Chosen nodes
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */
@@ -2455,6 +2463,7 @@
 
 /**
  * @defgroup devicetree-generic-foreach "For-each" macros
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */
@@ -2974,6 +2983,7 @@
 
 /**
  * @defgroup devicetree-generic-exist Existence checks
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */
@@ -3152,6 +3162,7 @@
 
 /**
  * @defgroup devicetree-generic-bus Bus helpers
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */
@@ -3235,6 +3246,7 @@
 
 /**
  * @defgroup devicetree-inst Instance-based devicetree APIs
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */

@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief Logger backend interface
  * @defgroup log_backend Logger backend interface
+ * @since 1.13.0
  * @ingroup logger
  * @{
  */

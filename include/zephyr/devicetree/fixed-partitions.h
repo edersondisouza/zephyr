@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup devicetree-fixed-partition Devicetree Fixed Partition API
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */

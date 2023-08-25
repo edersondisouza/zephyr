@@ -13,6 +13,7 @@
 /**
  * @brief Configuration Server Model
  * @defgroup bt_mesh_cfg_srv Configuration Server Model
+ * @since 1.9.0
  * @ingroup bt_mesh
  * @{
  */

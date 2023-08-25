@@ -19,11 +19,13 @@ extern "C" {
 /**
  * @brief Log output API
  * @defgroup log_output Log output API
+ * @since 1.13.0
  * @ingroup logger
  * @{
  */
 
 /**@defgroup LOG_OUTPUT_FLAGS Log output formatting flags.
+ * @since 1.13.0
  * @{
  */
 

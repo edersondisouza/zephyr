@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup devicetree-io-channels Devicetree IO Channels API
+ * @since 2.3.0
  * @ingroup devicetree
  * @{
  */

@@ -27,6 +27,7 @@
 /**
  * @brief Random Function APIs
  * @defgroup random_api Random Function APIs
+ * @since 1.0.0
  * @ingroup crypto
  * @{
  */

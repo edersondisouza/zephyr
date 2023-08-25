@@ -17,6 +17,7 @@
 /**
  * @brief Promiscuous mode support.
  * @defgroup promiscuous Promiscuous mode
+ * @since 1.13.0
  * @ingroup networking
  * @{
  */
