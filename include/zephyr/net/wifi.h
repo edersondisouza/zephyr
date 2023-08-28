@@ -13,7 +13,7 @@
 /**
  * @defgroup wifi_mgmt Wi-Fi Management
  * @since 1.12.0
- * Wi-Fi Management API.
+ * @brief Wi-Fi Management API.
  * @ingroup networking
  * @{
  */
