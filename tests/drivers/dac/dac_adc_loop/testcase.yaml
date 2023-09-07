@@ -1,0 +1,14 @@
+common:
+  tags:
+    - dac
+    - drivers
+tests:
+  drivers.dac.loopback:
+    depends_on:
+      - dac
+      - adc
+    harness: ztest
+    harness_config:
+      fixture: dac_adc_loopback
+    platform_allow:
+      - frdm_k64f
