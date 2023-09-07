@@ -1,12 +1,9 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- *
- * Copyright (c) 2023 Benjamin Björnsson <benjamin.bjornsson@gmail.com>
- */
-
 / {
 	zephyr,user {
 		io-channels = <&adc0 14>;
+		dac = <&dac0>;
+		dac-channel-id = <0>;
+		dac-resolution = <12>;
 	};
 };
 
