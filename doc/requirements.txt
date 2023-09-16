@@ -13,3 +13,7 @@ sphinx-togglebutton
 # YAML validation. Used by zephyr_module.
 PyYAML>=5.1
 pykwalify
+
+# Used by doxmlparser
+lxml>=4.0.0
+six>=1.0.0
