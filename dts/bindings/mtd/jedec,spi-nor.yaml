@@ -21,3 +21,7 @@ properties:
   reset-gpios:
     type: phandle-array
     description: RESETn pin
+  write-block-size:
+    type: int
+    description: address alignment required by flash write operations
+    default: 1

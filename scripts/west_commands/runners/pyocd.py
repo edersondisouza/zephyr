@@ -176,7 +176,8 @@ class PyOcdBinaryRunner(ZephyrBinaryRunner):
                self.flash_extra +
                [fname])
 
-        self.logger.info('Flashing file: {}'.format(fname))
+        self.logger.info('--Flashing file: {}'.format(fname))
+        self.logger.info(f">>> {cmd}")
         self.check_call(cmd)
 
     def log_gdbserver_message(self):

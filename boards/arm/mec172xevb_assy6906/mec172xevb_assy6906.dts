@@ -28,6 +28,7 @@
 		i2c7 = &i2c_smb_2;
 		pwm-0 = &pwm0;
 		watchdog0 = &wdog;
+		spi-flash0 = &spi1_cs0_flash;
 	};
 
 	leds {
@@ -47,6 +48,61 @@
 			label = "LED 5";
 		};
 	};
+};
+
+&spi0 {
+	status = "okay";
+	compatible = "microchip,xec-qmspi-ldma";
+	clock-frequency = <24000000>;
+	lines = <4>;
+	chip-select = <0>;
+
+	pinctrl-0 = < &shd_cs0_n_gpio055
+		      &shd_clk_gpio056
+		      &shd_io0_gpio223
+		      &shd_io1_gpio224
+		      &shd_io2_gpio227
+		      &shd_io3_gpio016 >;
+	pinctrl-names = "default";
+
+	spi1_cs0_flash: w25q128@0 {
+		compatible = "jedec,spi-nor";
+		/* 134217728 bits = 16 Mbytes */
+		size = <0x8000000>;
+		reg = <0>;
+		spi-max-frequency = <24000000>;
+		jedec-id = [ef 40 18];
+		status = "okay";
+	};
+};
+
+&spi1_cs0_flash {
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        boot_partition: partition@0 {
+            label = "mcuboot";
+            reg = <0x00000000 0x00010000>;
+            read-only;
+        };
+
+        slot0_partition: partition@10000 {
+            label = "image-0";
+            reg = <0x00010000 0x00030000>;
+        };
+
+        slot1_partition: partition@40000 {
+            label = "image-1";
+            reg = <0x00040000 0x00030000>;
+        };
+    };
+};
+
+&shd_cs0_n_gpio055 {
+	drive-open-drain;
+	output-high;
 };
 
 &cpu0 {
