@@ -1,0 +1,15 @@
+/ {
+    chosen {
+        zephyr,code-partition = &slot1_partition;
+    };
+};
+/* HACK ALERT!
+   The real position for the code should be 0X000D8000,
+   But CONFIG_FLASH_LOAD_OFFSET is 0x40000, due the partition slot
+   being used. We probably need a config that tells MCUBOOT is
+   going to copy image to RAM, so that CONFIG_FLASH_LOAD_OFFSET is
+   not added to ROM_ADDRESS in the linker
+   */
+&flash0 {
+    reg = <0x00098000 0x50000>;
+};

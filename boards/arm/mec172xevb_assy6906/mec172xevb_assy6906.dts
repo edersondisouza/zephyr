@@ -88,6 +88,7 @@
             read-only;
         };
 
+        /* Partitions can actually be as big as the instruction RAM, 320kB */
         slot0_partition: partition@10000 {
             label = "image-0";
             reg = <0x00010000 0x00030000>;
