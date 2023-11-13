@@ -1,0 +1,14 @@
+test-dac-adc-loop.yaml 
+description: |
+        This binding provides resources required to build and run the tests/drivers/dac/dac_adc_loop         test in Zepyr.
+
+compatible: "test-dac-adc-loop"
+
+properties:
+        io-channels: 
+        out-dacs:
+                type: phandle-array
+                required: true
+                description: |
+                        DAC output pin that will be used to measure the value converted by the ADC
+
