@@ -84,7 +84,7 @@
 
         boot_partition: partition@0 {
             label = "mcuboot";
-            reg = <0x00000000 0x00010000>;
+            reg = <0x00000000 0x00005000>;
             read-only;
         };
 
