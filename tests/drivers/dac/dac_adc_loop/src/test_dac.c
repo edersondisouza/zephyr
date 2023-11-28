@@ -23,8 +23,8 @@
 */
 
 static const struct dac_channel_cfg dac_ch_cfg = {
-	.channel_id = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), dac_channel_id)),
-	.resolution = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), dac_resolution)),
+	.channel_id = DT_PROP(DT_PATH(zephyr_user), dac_channel_id),
+	.resolution = DT_PROP(DT_PATH(zephyr_user), dac_resolution),
 	.buffered = true
 };
 
@@ -38,6 +38,7 @@ static const struct adc_channel_cfg adc_ch_cfg = ADC_CHANNEL_CFG_DT(DT_CHILD(DT_
 static const struct device *init_dac(void)
 {
 	int ret;
+	/*TODO: DAC_DEVICE_NODE is commented out */
 	const struct device *const dac_dev = DEVICE_DT_GET(DAC_DEVICE_NODE);
 
 	zassert_true(device_is_ready(dac_dev), "DAC device is not ready");
@@ -52,6 +53,7 @@ static const struct device *init_dac(void)
 static const struct device *init_adc(void)
 {
 	int ret;
+	/*TODO: ADC_DEVICE_NODE is commented out */
 	const struct device *const adc_dev = DEVICE_DT_GET(ADC_DEVICE_NODE);
 
 	zassert_true(device_is_ready(adc_dev), "ADC device is not ready");
@@ -73,7 +75,7 @@ static int test_dac_to_adc(void)
 		return TC_FAIL;
 	}
 
-	ret = dac_write_value(dac_dev, DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), dac_channel_id)), (1U << DT_PROP(DT_PATH(zephyr_user), dac_resolution) / 2)); // half value
+	ret = dac_write_value(dac_dev, DT_PROP(DT_PATH(zephyr_user), dac_channel_id), (1U << DT_PROP(DT_PATH(zephyr_user), dac_resolution) / 2)); // half value
 	
 	zassert_equal(ret, 0, "dac_write_value() failed with code %d", ret);
 
@@ -81,9 +83,11 @@ static int test_dac_to_adc(void)
 
 	static int32_t m_sample_buffer[1];
 	static const struct adc_sequence sequence = {
+		/*TODO: you are getting 'zephyr,channel-id' prop from adc0, but adc0 doesn't have it. Which node does have it? */
 		.channels    = BIT(DT_PROP(DT_NODELABEL(adc0), zephyr_channel_id)),
 		.buffer      = &m_sample_buffer,
 		.buffer_size = sizeof(m_sample_buffer),
+		/*TODO: you are getting 'zephyr,resolution' prop from adc0, but adc0 doesn't have it. Which node does have it? */
 		.resolution  = DT_PROP(DT_NODELABEL(adc0), zephyr_resolution),
 		};
 
