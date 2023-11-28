@@ -23,8 +23,8 @@
 */
 
 static const struct dac_channel_cfg dac_ch_cfg = {
-	.channel_id = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), channel_id)),
-	.resolution = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), resolution)),
+	.channel_id = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), dac-channel_id)),
+	.resolution = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), dac-resolution)),
 	.buffered = true
 };
 
