@@ -1,7 +1,22 @@
 / {
-	resources {
-		compatible = "test-dac-adc-loop";
+	zephyr,user{
 		io-channels = <&adc0 14>;
-		out-dacs = <&dac0>;
-		};
+		dac = <&dac0>;
+		dac-channel-id = <0>;
+		dac-resolution = <12>;
+	};
+};
+
+&adc0{
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	channel@e{
+		reg = <14>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
 };

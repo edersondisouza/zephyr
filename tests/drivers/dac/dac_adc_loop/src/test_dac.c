@@ -4,8 +4,7 @@
 #include <zephyr/ztest.h>
 #include <stdio.h>
 
-
-#if defined(CONFIG_BOARD_FRDM_K64F)
+/*#if defined(CONFIG_BOARD_FRDM_K64F)
 
 #define DAC_DEVICE_NODE		DT_NODELABEL(dac0)
 #define DAC_RESOLUTION		12
@@ -21,19 +20,20 @@
 #else
 #error "Unsupported board."
 #endif
+*/
 
 static const struct dac_channel_cfg dac_ch_cfg = {
-	.channel_id = DAC_CHANNEL_ID,
-	.resolution = DAC_RESOLUTION,
+	.channel_id = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), channel_id)),
+	.resolution = DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), resolution)),
 	.buffered = true
 };
 
-static const struct adc_channel_cfg adc_ch_cfg = {
+static const struct adc_channel_cfg adc_ch_cfg = ADC_CHANNEL_CFG_DT(DT_CHILD(DT_NODELABEL(adc0), channel_e));/*{
 	.gain             = ADC_GAIN,
 	.reference        = ADC_REFERENCE,
 	.acquisition_time = ADC_ACQUISITION_TIME,
-	.channel_id       = ADC_CHANNEL_ID,
-};
+	.channel_id       = ADC_CHANNEL_ID,*/
+
 
 static const struct device *init_dac(void)
 {
@@ -55,13 +55,13 @@ static const struct device *init_adc(void)
 	const struct device *const adc_dev = DEVICE_DT_GET(ADC_DEVICE_NODE);
 
 	zassert_true(device_is_ready(adc_dev), "ADC device is not ready");
-
 	ret = adc_channel_setup(adc_dev, &adc_ch_cfg);
 	zassert_equal(ret, 0,
 		"Setting up of the ADC channel failed with code %d", ret);
 	
 	return adc_dev;
 }
+
 
 static int test_dac_to_adc(void)
 {
@@ -73,8 +73,7 @@ static int test_dac_to_adc(void)
 		return TC_FAIL;
 	}
 
-	ret = dac_write_value(dac_dev, DAC_CHANNEL_ID,
-		(1U << DAC_RESOLUTION) / 2); // half value
+	ret = dac_write_value(dac_dev, DT_PROP(DT_NODELABEL(DT_PATH(zephyr_user), dac_channel_id)), (1U << DT_PROP(DT_PATH(zephyr_user), dac_resolution) / 2)); // half value
 	
 	zassert_equal(ret, 0, "dac_write_value() failed with code %d", ret);
 
@@ -82,27 +81,27 @@ static int test_dac_to_adc(void)
 
 	static int32_t m_sample_buffer[1];
 	static const struct adc_sequence sequence = {
-		.channels    = BIT(ADC_CHANNEL_ID),
+		.channels    = BIT(DT_PROP(DT_NODELABEL(adc0), zephyr_channel_id)),
 		.buffer      = &m_sample_buffer,
 		.buffer_size = sizeof(m_sample_buffer),
-		.resolution  = ADC_RESOLUTION,
-	};
+		.resolution  = DT_PROP(DT_NODELABEL(adc0), zephyr_resolution),
+		};
 
 	ret = adc_read(adc_dev, &sequence);
-	printf("-_________________________________________________________\n");
 	
        	float val_mv = m_sample_buffer[0]; 
 	
-	val_mv  = (val_mv/4096 * 3.3) + 0.5; // need to figure out floating point values
-
-		
-	printk("%.3f\n", val_mv);
+	val_mv  = (val_mv/4096 * 3.3); 
 
 	zassert_equal(ret, 0, "adc_read() failed with code %d", ret);
 	zassert_within(m_sample_buffer[0],
-		(1U << ADC_RESOLUTION) / 2, 32,
+		(1U << DT_PROP(DT_NODELABEL(adc0), zephyr_resolution)) / 2, 32,
 		"Value %d read from ADC does not match expected range.",
 		m_sample_buffer[0]);
+	
+	printk("\n");
+	printk("ADC VOLTAGE: %.3f\n", val_mv);
+	printk("\n");
 	return TC_PASS;
 }
 
