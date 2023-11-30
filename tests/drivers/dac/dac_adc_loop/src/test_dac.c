@@ -79,8 +79,32 @@ static int test_dac_to_adc(void)
 		return TC_FAIL;
 	}
 
-	ret = dac_write_value(dac_dev, DT_PROP(DT_PATH(zephyr_user), dac_channel_id), (1U << DT_PROP(DT_PATH(zephyr_user), dac_resolution) / 2)); // half value
+	printf("--------------------------ADC STUFF------------------------------\n");
+	printf("ACQ TIME: %d\n", adc_ch_cfg.acquisition_time);
+	printf("DEFAULT ADCGAIN: %d\n", ADC_GAIN_1);
+	printf("DEFAULT REF: %d\n", ADC_REF_INTERNAL);
+	printf("CHANNEL_ID: %d or %d\n", adc_ch_cfg.channel_id, BIT(DT_REG_ADDR(ADC_DEVICE_NODE)));
+
+	printf("DIFFERENTIAL: %d\n", adc_ch_cfg.differential);
+	printf("GAIN: %d\n", adc_ch_cfg.gain);
+	printf("REFERENCE: %d\n", adc_ch_cfg.reference);
+	printf("RESOLUTION: %d\n", DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), zephyr_resolution));
+
+	printf("---------------------------DAC STUFF-------------------------------\n");
+
+	printf("RESOLUTION: %d\n", dac_ch_cfg.resolution);
+	printf("CHANNEL_ID: %d\n", dac_ch_cfg.channel_id);
+	printf("WRITE CHANNEL ID VALUE: %d\n", DT_PROP(DT_PATH(zephyr_user), dac_channel_id));
+	printf("BUFFERED: %d\n", dac_ch_cfg.buffered);	
+
 	
+
+	ret = dac_write_value(dac_dev, DT_PROP(DT_PATH(zephyr_user), dac_channel_id), (1U << dac_ch_cfg.resolution / 2)); // half value
+
+	float write_val = (1U << dac_ch_cfg.resolution) / 2;
+
+	printf("DAC WRITE VALUE: %f\n", write_val);
+
 	zassert_equal(ret, 0, "dac_write_value() failed with code %d", ret);
 
 	k_sleep(K_MSEC(10));
@@ -88,7 +112,7 @@ static int test_dac_to_adc(void)
 	static int32_t m_sample_buffer[1];
 	static const struct adc_sequence sequence = {
 		/*TODO: you are getting 'zephyr,channel-id' prop from adc0, but adc0 doesn't have it. Which node does have it? */
-		.channels    = BIT(DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), reg)),
+		.channels    = BIT(23),
 		.buffer      = &m_sample_buffer,
 		.buffer_size = sizeof(m_sample_buffer),
 		/*TODO: you are getting 'zephyr,resolution' prop from adc0, but adc0 doesn't have it. Which node does have it? */
@@ -98,8 +122,14 @@ static int test_dac_to_adc(void)
 	ret = adc_read(adc_dev, &sequence);
 	
        	float val_mv = m_sample_buffer[0]; 
-	
+
+	printf ("VAL_MV: %f\n", val_mv);	
 	val_mv  = (val_mv/4096 * 3.3); 
+
+
+	printk("\n");
+	printk("ADC VOLTAGE: %.3f\n", val_mv);
+	printk("\n");
 
 	zassert_equal(ret, 0, "adc_read() failed with code %d", ret);
 	zassert_within(m_sample_buffer[0],
@@ -107,9 +137,7 @@ static int test_dac_to_adc(void)
 		"Value %d read from ADC does not match expected range.",
 		m_sample_buffer[0]);
 	
-	printk("\n");
-	printk("ADC VOLTAGE: %.3f\n", val_mv);
-	printk("\n");
+	
 	return TC_PASS;
 }
 
