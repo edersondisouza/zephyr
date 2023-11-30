@@ -22,13 +22,16 @@
 #endif
 */
 
+#define DAC_DEVICE_NODE		DT_NODELABEL(dac0)
+#define ADC_DEVICE_NODE 	DT_NODELABEL(adc0)
+
 static const struct dac_channel_cfg dac_ch_cfg = {
 	.channel_id = DT_PROP(DT_PATH(zephyr_user), dac_channel_id),
 	.resolution = DT_PROP(DT_PATH(zephyr_user), dac_resolution),
 	.buffered = true
 };
 
-static const struct adc_channel_cfg adc_ch_cfg = ADC_CHANNEL_CFG_DT(DT_CHILD(DT_NODELABEL(adc0), channel_e));/*{
+static const struct adc_channel_cfg adc_ch_cfg = ADC_CHANNEL_CFG_DT(DT_CHILD(ADC_DEVICE_NODE, channel_e));/*{
 	.gain             = ADC_GAIN,
 	.reference        = ADC_REFERENCE,
 	.acquisition_time = ADC_ACQUISITION_TIME,
@@ -71,6 +74,7 @@ static int test_dac_to_adc(void)
 	const struct device *dac_dev = init_dac();
 	const struct device *adc_dev = init_adc();
 
+
 	if (!dac_dev || !adc_dev) {
 		return TC_FAIL;
 	}
@@ -84,11 +88,11 @@ static int test_dac_to_adc(void)
 	static int32_t m_sample_buffer[1];
 	static const struct adc_sequence sequence = {
 		/*TODO: you are getting 'zephyr,channel-id' prop from adc0, but adc0 doesn't have it. Which node does have it? */
-		.channels    = BIT(DT_PROP(DT_NODELABEL(adc0), zephyr_channel_id)),
+		.channels    = BIT(DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), reg)),
 		.buffer      = &m_sample_buffer,
 		.buffer_size = sizeof(m_sample_buffer),
 		/*TODO: you are getting 'zephyr,resolution' prop from adc0, but adc0 doesn't have it. Which node does have it? */
-		.resolution  = DT_PROP(DT_NODELABEL(adc0), zephyr_resolution),
+		.resolution  = DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), zephyr_resolution),
 		};
 
 	ret = adc_read(adc_dev, &sequence);
@@ -99,7 +103,7 @@ static int test_dac_to_adc(void)
 
 	zassert_equal(ret, 0, "adc_read() failed with code %d", ret);
 	zassert_within(m_sample_buffer[0],
-		(1U << DT_PROP(DT_NODELABEL(adc0), zephyr_resolution)) / 2, 32,
+		(1U << DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), zephyr_resolution)) / 2, 32,
 		"Value %d read from ADC does not match expected range.",
 		m_sample_buffer[0]);
 	
