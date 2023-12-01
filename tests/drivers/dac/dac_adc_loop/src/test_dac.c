@@ -21,9 +21,22 @@
 #error "Unsupported board."
 #endif
 */
-
+// check drivers, dac.h, check macros
 #define DAC_DEVICE_NODE		DT_NODELABEL(dac0)
 #define ADC_DEVICE_NODE 	DT_NODELABEL(adc0)
+
+#define DT_SPEC_AND_COMMA(node_id, prop, idx) ADC_DT_SPEC_GET_BY_IDX(node_id, idx),
+
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
+/* Data of ADC io-channels specified in devicetree. */
+static const struct adc_dt_spec adc_channels[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, DT_SPEC_AND_COMMA)
+};
+static const int adc_channels_count = ARRAY_SIZE(adc_channels);
+#else
+#error "Unsupported board."
+#endif
+
 
 static const struct dac_channel_cfg dac_ch_cfg = {
 	.channel_id = DT_PROP(DT_PATH(zephyr_user), dac_channel_id),
@@ -36,6 +49,17 @@ static const struct adc_channel_cfg adc_ch_cfg = ADC_CHANNEL_CFG_DT(DT_CHILD(ADC
 	.reference        = ADC_REFERENCE,
 	.acquisition_time = ADC_ACQUISITION_TIME,
 	.channel_id       = ADC_CHANNEL_ID,*/
+
+
+const struct device *get_adc_device(void)
+{
+	if (!adc_is_ready_dt(&adc_channels[0])) {
+		printk("ADC device is not ready\n");
+		return NULL;
+	}
+
+	return adc_channels[0].dev;
+}
 
 
 static const struct device *init_dac(void)
@@ -57,7 +81,7 @@ static const struct device *init_adc(void)
 {
 	int ret;
 	/*TODO: ADC_DEVICE_NODE is commented out */
-	const struct device *const adc_dev = DEVICE_DT_GET(ADC_DEVICE_NODE);
+	const struct device *const adc_dev = get_adc_device();//DEVICE_DT_GET(ADC_DEVICE_NODE);
 
 	zassert_true(device_is_ready(adc_dev), "ADC device is not ready");
 	ret = adc_channel_setup(adc_dev, &adc_ch_cfg);
@@ -79,6 +103,12 @@ static int test_dac_to_adc(void)
 		return TC_FAIL;
 	}
 
+
+	printf("ADC: ");
+	printf(adc_channels[0].dev);
+		printf(adc_channels[1].dev);
+			printf(adc_channels[2].dev);
+
 	printf("--------------------------ADC STUFF------------------------------\n");
 	printf("ACQ TIME: %d\n", adc_ch_cfg.acquisition_time);
 	printf("DEFAULT ADCGAIN: %d\n", ADC_GAIN_1);
@@ -97,13 +127,13 @@ static int test_dac_to_adc(void)
 	printf("WRITE CHANNEL ID VALUE: %d\n", DT_PROP(DT_PATH(zephyr_user), dac_channel_id));
 	printf("BUFFERED: %d\n", dac_ch_cfg.buffered);	
 
+	int write_val = (1U << dac_ch_cfg.resolution) / 2;
+
+	ret = dac_write_value(dac_dev, DT_PROP(DT_PATH(zephyr_user), dac_channel_id), write_val); // half value
+
 	
 
-	ret = dac_write_value(dac_dev, DT_PROP(DT_PATH(zephyr_user), dac_channel_id), (1U << dac_ch_cfg.resolution / 2)); // half value
-
-	float write_val = (1U << dac_ch_cfg.resolution) / 2;
-
-	printf("DAC WRITE VALUE: %f\n", write_val);
+	printf("DAC WRITE VALUE: %d\n", write_val);
 
 	zassert_equal(ret, 0, "dac_write_value() failed with code %d", ret);
 
