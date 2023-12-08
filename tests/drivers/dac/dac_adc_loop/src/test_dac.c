@@ -4,20 +4,20 @@
 #include <zephyr/ztest.h>
 #include <stdio.h>
 
-#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac)
+#define USE_REF DT_NODE_HAS_PROP(DT_PATH(zephyr_user), answer)
+
+#if USE_REF
+
+#define ANSWER DT_PROP(DT_PATH(zephyr_user), answer)
+
+#else
 #define DAC_DEVICE_NODE		DT_PROP(DT_PATH(zephyr_user), dac)// DT_NODELABEL(dac0)
-#endif
-
-#define ADC_DEVICE_NODE DT_PHANDLE(DT_PATH(zephyr_user), io_channels)
-
 
 static const struct dac_channel_cfg dac_ch_cfg = {
 	.channel_id = DT_PROP(DT_PATH(zephyr_user), dac_channel_id),
 	.resolution = DT_PROP(DT_PATH(zephyr_user), dac_resolution),
 	.buffered = true
 };
-
-static const struct adc_channel_cfg adc_ch_cfg = ADC_CHANNEL_CFG_DT(DT_CHILD(ADC_DEVICE_NODE, channel_e));
 
 static const struct device *init_dac(void)
 {
@@ -32,6 +32,12 @@ static const struct device *init_dac(void)
 
 	return dac_dev;
 }
+#endif
+
+#define ADC_DEVICE_NODE DT_PHANDLE(DT_PATH(zephyr_user), io_channels)
+
+static const struct adc_channel_cfg adc_ch_cfg = ADC_CHANNEL_CFG_DT(DT_CHILD(ADC_DEVICE_NODE, channel_e));
+
 
 static const struct device *init_adc(void)
 {
@@ -50,39 +56,46 @@ static const struct device *init_adc(void)
 static int test_dac_to_adc(void)
 {
 	int ret;
+	
+	const struct device *adc_dev = init_adc();	
+	if (!adc_dev) {
+		return TC_FAIL;
+	}
+	
+	
+	#if USE_REF
+	//ref stuff
+	#else
 	const struct device *dac_dev = init_dac();
-	const struct device *adc_dev = init_adc();
-
-
-	if (!dac_dev || !adc_dev) {
+	if (!dac_dev) {
 		return TC_FAIL;
 	}
 
-	int write_val = (1U << dac_ch_cfg.resolution) / 2;
+	int write_val = (1U << dac_ch_cfg.resolution) / 3;
 
 	ret = dac_write_value(dac_dev, DT_PROP(DT_PATH(zephyr_user), dac_channel_id), write_val); // half value
 
+	
+
 	zassert_equal(ret, 0, "dac_write_value() failed with code %d", ret);
+
 
 	k_sleep(K_MSEC(10));
 
-	
+	#endif
 
 	static int32_t m_sample_buffer[1];
 	struct adc_sequence sequence = {
-		/*TODO: you are getting 'zephyr,channel-id' prop from adc0, but adc0 doesn't have it. Which node does have it? */
 		.channels    = BIT(adc_ch_cfg.channel_id),
 		.buffer      = &m_sample_buffer,
 		.buffer_size = sizeof(m_sample_buffer),
-		/*TODO: you are getting 'zephyr,resolution' prop from adc0, but adc0 doesn't have it. Which node does have it? */
 		.resolution  = DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), zephyr_resolution),
 		};
 
 	ret = adc_read(adc_dev, &sequence);
 	
    	float val_mv = m_sample_buffer[0]; 
-
-	//printf ("VAL_MV: %f\n", val_mv);	
+	
 	val_mv  = (val_mv/4096 * 3.3); 
 
 
@@ -92,7 +105,7 @@ static int test_dac_to_adc(void)
 
 	zassert_equal(ret, 0, "adc_read() failed with code %d", ret);
 	zassert_within(m_sample_buffer[0],
-		(1U << DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), zephyr_resolution)) / 2, 32,
+		(1U << DT_PROP(DT_CHILD(ADC_DEVICE_NODE, channel_e), zephyr_resolution)) / 3, 32,
 		"Value %d read from ADC does not match expected range.",
 		m_sample_buffer[0]);
 	
@@ -103,6 +116,7 @@ static int test_dac_to_adc(void)
 ZTEST(dac_adc_loop, test_dac_to_adc)
 {
 	zassert_true(test_dac_to_adc() == TC_PASS);
+	test_dac_to_adc();
 	test_dac_to_adc();
 }
 
