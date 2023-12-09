@@ -57,7 +57,7 @@ static const struct device *init_adc(void)
 	return adc_dev;
 }
 
-
+#ifdef DAC_DEVICE_NODE
 static int test_dac_to_adc(void)
 {
 	int ret, write_val;
@@ -117,5 +117,57 @@ ZTEST(dac_adc_loop, test_dac_to_adc)
 		zassert_true(test_dac_to_adc() == TC_PASS);
 	}
 }
-
 ZTEST_SUITE(dac_adc_loop, NULL, NULL, NULL, NULL, NULL);
+
+#endif
+
+
+#ifdef ANSWER
+static int test_ref_to_adc(void)
+{
+	int ret, write_val;
+	
+	const struct device *adc_dev = init_adc();	
+	if (!adc_dev) {
+		return TC_FAIL;
+	}
+
+	static int32_t m_sample_buffer[1];
+	struct adc_sequence sequence = {
+		.channels    = BIT(adc_ch_cfg.channel_id),
+		.buffer      = &m_sample_buffer,
+		.buffer_size = sizeof(m_sample_buffer),
+		.resolution  = DT_PROP(DT_CHILD(ADC_DEVICE_NODE, CHANNEL), zephyr_resolution),
+		};
+
+	ret = adc_read(adc_dev, &sequence);
+	
+   	float val_mv = m_sample_buffer[0]; 
+	
+	val_mv  = (val_mv/4096 * 3.3); 
+
+	printk("\n");
+	printk("ADC VOLTAGE: %.3f\n", val_mv);
+	printk("\n");
+
+	zassert_equal(ret, 0, "adc_read() failed with code %d", ret);
+	zassert_within(m_sample_buffer[0],
+		(1U << DT_PROP(DT_CHILD(ADC_DEVICE_NODE, CHANNEL), zephyr_resolution)), 32,
+		"Value %d read from ADC does not match expected range.",
+		m_sample_buffer[0]);
+	
+	
+	return TC_PASS;
+}
+
+ZTEST(dac_adc_loop, test_ref_to_adc)
+{
+	int i;
+	for (i = 0; i < PASSES; i++){
+		zassert_true(test_ref_to_adc() == TC_PASS);
+	}
+}
+ZTEST_SUITE(dac_adc_loop, NULL, NULL, NULL, NULL, NULL);
+
+#endif
+
