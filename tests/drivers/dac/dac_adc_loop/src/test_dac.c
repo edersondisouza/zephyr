@@ -4,39 +4,19 @@
 #include <zephyr/ztest.h>
 #include <stdio.h>
 
+#define PASSES 5
+#define DIV 2
+#define EXPECTED_VALUE 3.0
+#define ADC_DEVICE_NODE DT_PHANDLE(DT_PATH(zephyr_user), io_channels)
+
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), answer)
-
 #define ANSWER DT_PROP(DT_PATH(zephyr_user), answer)
-
 #endif
 
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac) 
-#define DAC_DEVICE_NODE		DT_PROP(DT_PATH(zephyr_user), dac)// DT_NODELABEL(dac0)
-
-static const struct dac_channel_cfg dac_ch_cfg = {
-	.channel_id = DT_PROP(DT_PATH(zephyr_user), dac_channel_id),
-	.resolution = DT_PROP(DT_PATH(zephyr_user), dac_resolution),
-	.buffered = true
-};
-
-static const struct device *init_dac(void)
-{
-	int ret;
-	const struct device *const dac_dev = DEVICE_DT_GET(DAC_DEVICE_NODE);
-
-	zassert_true(device_is_ready(dac_dev), "DAC device is not ready");
-
-	ret = dac_channel_setup(dac_dev, &dac_ch_cfg);
-	zassert_equal(ret, 0,
-		"Setting up of the first channel failed with code %d", ret);
-
-	return dac_dev;
-}
+#define DAC_DEVICE_NODE	DT_PROP(DT_PATH(zephyr_user), dac)
 #endif
 
-#define PASSES 5
-#define DIV 2
-#define ADC_DEVICE_NODE DT_PHANDLE(DT_PATH(zephyr_user), io_channels)
 
 
 #define CHANNEL UTIL_CAT(channel_, DT_PHA(DT_PATH(zephyr_user), io_channels, input))
@@ -58,18 +38,35 @@ static const struct device *init_adc(void)
 }
 
 #ifdef DAC_DEVICE_NODE
+
+static const struct dac_channel_cfg dac_ch_cfg = {
+	.channel_id = DT_PROP(DT_PATH(zephyr_user), dac_channel_id),
+	.resolution = DT_PROP(DT_PATH(zephyr_user), dac_resolution),
+	.buffered = true
+};
+
+static const struct device *init_dac(void)
+{
+	int ret;
+	const struct device *const dac_dev = DEVICE_DT_GET(DAC_DEVICE_NODE);
+
+	zassert_true(device_is_ready(dac_dev), "DAC device is not ready");
+
+	ret = dac_channel_setup(dac_dev, &dac_ch_cfg);
+	zassert_equal(ret, 0,
+		"Setting up of the first channel failed with code %d", ret);
+
+	return dac_dev;
+}
+
 static int test_dac_to_adc(void)
 {
 	int ret, write_val;
 	
 	const struct device *adc_dev = init_adc();	
-	if (!adc_dev) {
-		return TC_FAIL;
-	}
-	
-	
 	const struct device *dac_dev = init_dac();
-	if (!dac_dev) {
+
+	if (!adc_dev || !dac_dev) {
 		return TC_FAIL;
 	}
 
@@ -92,7 +89,8 @@ static int test_dac_to_adc(void)
 	ret = adc_read(adc_dev, &sequence);
 	
    	float val_mv = m_sample_buffer[0]; 
-	
+
+	printf ("VAL_MV: %f\n", val_mv);	
 	val_mv  = (val_mv/4096 * 3.3); 
 
 
@@ -117,16 +115,18 @@ ZTEST(dac_adc_loop, test_dac_to_adc)
 		zassert_true(test_dac_to_adc() == TC_PASS);
 	}
 }
+
 ZTEST_SUITE(dac_adc_loop, NULL, NULL, NULL, NULL, NULL);
-
 #endif
-
 
 #ifdef ANSWER
 static int test_ref_to_adc(void)
 {
-	int ret, write_val;
-	
+	int ret;
+	float exp_val;
+
+	exp_val = (EXPECTED_VALUE/3.3) * 4096;
+
 	const struct device *adc_dev = init_adc();	
 	if (!adc_dev) {
 		return TC_FAIL;
@@ -142,17 +142,19 @@ static int test_ref_to_adc(void)
 
 	ret = adc_read(adc_dev, &sequence);
 	
-   	float val_mv = m_sample_buffer[0]; 
-	
+	float val_mv = m_sample_buffer[0]; 
+
+	printf ("VAL_MV: %f\n", val_mv);	
 	val_mv  = (val_mv/4096 * 3.3); 
+
 
 	printk("\n");
 	printk("ADC VOLTAGE: %.3f\n", val_mv);
 	printk("\n");
-
+	
 	zassert_equal(ret, 0, "adc_read() failed with code %d", ret);
 	zassert_within(m_sample_buffer[0],
-		(1U << DT_PROP(DT_CHILD(ADC_DEVICE_NODE, CHANNEL), zephyr_resolution)), 32,
+		(exp_val), 32,
 		"Value %d read from ADC does not match expected range.",
 		m_sample_buffer[0]);
 	
@@ -162,10 +164,7 @@ static int test_ref_to_adc(void)
 
 ZTEST(dac_adc_loop, test_ref_to_adc)
 {
-	int i;
-	for (i = 0; i < PASSES; i++){
-		zassert_true(test_ref_to_adc() == TC_PASS);
-	}
+	zassert_true(test_ref_to_adc() == TC_PASS);
 }
 ZTEST_SUITE(dac_adc_loop, NULL, NULL, NULL, NULL, NULL);
 

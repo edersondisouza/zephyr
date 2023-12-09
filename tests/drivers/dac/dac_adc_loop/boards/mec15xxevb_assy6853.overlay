@@ -1,5 +1,5 @@
 / {
-	zephr,user {
+	zephyr,user {
 		answer = <42>;
 	};
 };
