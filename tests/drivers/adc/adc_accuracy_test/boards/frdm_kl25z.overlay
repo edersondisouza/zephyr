@@ -1,8 +1,7 @@
 / {
 	zephyr,user{
-		io-channels = <&adc0 20>;
-		answer = <42>;
-	
+		io-channels = <&adc0 12>;
+        reference = <1100>;
 	};
 };
 
@@ -11,8 +10,8 @@
 	#size-cells = <0>;
 	status = "okay";
 
-	channel@20{
-		reg = <20>;
+	channel@12{
+		reg = <12>;
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;

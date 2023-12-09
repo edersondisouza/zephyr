@@ -6,18 +6,15 @@
 
 #define PASSES 5
 #define DIV 2
-#define EXPECTED_VALUE 3.0
 #define ADC_DEVICE_NODE DT_PHANDLE(DT_PATH(zephyr_user), io_channels)
 
-#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), answer)
-#define ANSWER DT_PROP(DT_PATH(zephyr_user), answer)
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), reference)
+#define REF_V DT_PROP(DT_PATH(zephyr_user), reference)
 #endif
 
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), dac) 
 #define DAC_DEVICE_NODE	DT_PROP(DT_PATH(zephyr_user), dac)
 #endif
-
-
 
 #define CHANNEL UTIL_CAT(channel_, DT_PHA(DT_PATH(zephyr_user), io_channels, input))
 
@@ -108,7 +105,7 @@ static int test_dac_to_adc(void)
 	return TC_PASS;
 }
 
-ZTEST(dac_adc_loop, test_dac_to_adc)
+ZTEST(adc_accuracy_test, test_dac_to_adc)
 {
 	int i;
 	for (i = 0; i < PASSES; i++){
@@ -116,16 +113,16 @@ ZTEST(dac_adc_loop, test_dac_to_adc)
 	}
 }
 
-ZTEST_SUITE(dac_adc_loop, NULL, NULL, NULL, NULL, NULL);
+ZTEST_SUITE(adc_accuracy_test, NULL, NULL, NULL, NULL, NULL);
 #endif
 
-#ifdef ANSWER
+#ifdef REF_V
 static int test_ref_to_adc(void)
 {
 	int ret;
 	float exp_val;
 
-	exp_val = (EXPECTED_VALUE/3.3) * 4096;
+	exp_val = ((float)REF_V/3300) * 4096;
 
 	const struct device *adc_dev = init_adc();	
 	if (!adc_dev) {
@@ -141,32 +138,25 @@ static int test_ref_to_adc(void)
 		};
 
 	ret = adc_read(adc_dev, &sequence);
-	
 	float val_mv = m_sample_buffer[0]; 
+	val_mv  = (val_mv/4096 * 3.3);
 
-	printf ("VAL_MV: %f\n", val_mv);	
-	val_mv  = (val_mv/4096 * 3.3); 
-
-
-	printk("\n");
-	printk("ADC VOLTAGE: %.3f\n", val_mv);
-	printk("\n");
+	printk("\nADC VOLTAGE: %.3f\n", val_mv);\
 	
 	zassert_equal(ret, 0, "adc_read() failed with code %d", ret);
 	zassert_within(m_sample_buffer[0],
 		(exp_val), 32,
-		"Value %d read from ADC does not match expected range.",
-		m_sample_buffer[0]);
+		"Value %.3fV read from ADC does not match expected range (%.3fV).", val_mv, (float)REF_V/1000);
 	
 	
 	return TC_PASS;
 }
 
-ZTEST(dac_adc_loop, test_ref_to_adc)
+ZTEST(adc_accuracy_test, test_ref_to_adc)
 {
 	zassert_true(test_ref_to_adc() == TC_PASS);
 }
-ZTEST_SUITE(dac_adc_loop, NULL, NULL, NULL, NULL, NULL);
+ZTEST_SUITE(adc_accuracy_test, NULL, NULL, NULL, NULL, NULL);
 
 #endif
 

@@ -1,5 +1,0 @@
-/ {
-	zephyr,user {
-		answer = <42>;
-	};
-};
