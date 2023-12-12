@@ -12,7 +12,7 @@
 	#size-cells = <0>;
 	status = "okay";
 
-	channel@20{
+	channel@14{
 		reg = <20>;
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
