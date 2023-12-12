@@ -11,4 +11,4 @@ config DAC_SOURCE_TEST
 
 config REFERENCE_VOLTAGE_TEST
     bool
-    default y if $(dt_node_has_prop,/$(ZEPHYR_USER),reference)
+    default y if $(dt_node_has_prop,/$(ZEPHYR_USER),reference_mv)

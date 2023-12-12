@@ -1,7 +1,7 @@
 / {
 	zephyr,user{
 		io-channels = <&adc0 12>;
-        reference = <1100>;
+		reference_mv = <1100>;
 	};
 };
 

@@ -1,7 +1,7 @@
 #include <zephyr/drivers/adc.h>
 #include <zephyr/ztest.h>
 
-#define REF_V DT_PROP(DT_PATH(zephyr_user), reference)
+#define REF_V DT_PROP(DT_PATH(zephyr_user), reference_mv)
 #define PASSES 5
 
 extern const struct adc_dt_spec *get_adc_channel(void);
