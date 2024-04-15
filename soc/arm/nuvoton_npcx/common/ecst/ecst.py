@@ -57,6 +57,7 @@ FW_CRC_ENABLE = 0x02
 HDR_PTR_SIGNATURE = 0x55AA650E
 
 BOOTLOADER_TABLE_MODE = "bt"
+BOOTLOADER_HEADER_MODE = "bh"
 
 # SPI related values
 SPI_MAX_CLOCK_20_MHZ_VAL = "20"
@@ -122,6 +123,57 @@ SUPER_VERBOSE = 1
 # Success/failure codes
 EXIT_SUCCESS_STATUS = 0
 EXIT_FAILURE_STATUS = 1
+
+def _set_mode_handler(ecst_args):
+    """handler according to the "mode" argument
+
+    "bt" - bootloader table mode (default)
+    "bh" - bootloader header mode
+    :param ecst_args: the object representing the command line arguments.
+    """
+    mode = ecst_args.mode
+
+    if mode == BOOTLOADER_TABLE_MODE:
+        _bt_mode_handler(ecst_args)
+    elif mode == BOOTLOADER_HEADER_MODE:
+        _bh_mode_handler(ecst_args)
+    else:
+        exit_with_failure('Cannot Read operation mode - bt, bh!')
+
+def _bh_mode_handler(ecst_args):
+    """handles the bootloader table header mode using the provided arguments.
+
+    :param ecst_args: the object representing the command line arguments.
+    """
+    pointer = ecst_args.pointer
+    bh_offset = ecst_args.bh_offset
+
+    if pointer == INVALID_INPUT:
+        exit_with_failure("Cannot read pointer to the Firmware Header")
+    if bh_offset == INVALID_INPUT:
+        exit_with_failure("Cannot read BootLoader Header Offset")
+    if pointer & ADDR_16_BYTES_ALIGNED_MASK != 0:
+        pointer_to_print = _hex_print_format(pointer)
+        exit_with_failure(f'FW Header address ({pointer_to_print})'
+                          f' isn\'t 16-bytes aligned!')
+    if bh_offset:
+        if bh_offset & ADDR_4_BYTES_ALIGNED_MASK != 0:
+            bh_offset_to_print = _hex_print_format(bh_offset)
+            exit_with_failure(f'BootLoader Header Offset ({bh_offset_to_print})'
+                              f' isn\'t 4-bytes aligned!')
+    if pointer > MAX_FLASH_SIZE:
+        exit_with_failure(f'Pointer address ({pointer}) is higher '
+                          f'than flash size'
+                          f' ({_hex_print_format(MAX_FLASH_SIZE)})')
+
+    # if bh_offset argument is used, the image is merged with a BT header,
+    # otherwise a BT header is created in a different file
+    if bh_offset is not None:
+        _merge_file_with_bt_header(ecst_args)
+    else:
+        _create_bt_header(ecst_args)
+
+    _exit_with_success()
 
 def _bt_mode_handler(ecst_args):
     """creates the bootloader table using the provided arguments.
@@ -254,7 +306,6 @@ def _set_extended_anchor(output, ecst_args):
             print(f'- HDR - Header EXTENDED ANCHOR           - Offset'
                   f' {HDR_EXTENDED_ANCHOR_OFFSET}  -  {anchor_to_print}')
         output_file.close()
-
 
 def _check_firmware_header_offset(output, ecst_args):
     """checks if the firmware header offset entered is valid.
@@ -997,8 +1048,7 @@ def main():
             exit_with_failure(message)
         sys.exit(EXIT_SUCCESS_STATUS)
 
-    # Start to handle booter header table
-    _bt_mode_handler(ecst_obj)
+    _set_mode_handler(ecst_obj)
 
 if __name__ == '__main__':
     main()

@@ -124,7 +124,10 @@ def _populate_chip_fields(self):
 def _populate_args(self, argument_list):
     """populate the ecst arguments according to the command line/ args file"""
     for arg in vars(argument_list):
-        if (arg == "input") & (argument_list.input is not None):
+        if (arg == "mode") & (argument_list.mode is not None):
+            self.mode = argument_list.mode
+
+        elif (arg == "input") & (argument_list.input is not None):
             self.input = argument_list.input
 
         elif (arg == "output") & (argument_list.output is not None):
@@ -176,6 +179,18 @@ def _populate_args(self, argument_list):
             else:
                 self.paste_firmware_header = INVALID_INPUT
 
+        elif (arg == "pointer") & (argument_list.pointer is not None):
+            if _is_hex(argument_list.pointer):
+                self.pointer = int(argument_list.pointer, 16)
+            else:
+                self.pointer = INVALID_INPUT
+
+        elif (arg == "bh_offset") & (argument_list.bh_offset is not None):
+            if _is_hex(argument_list.bh_offset):
+                self.bh_offset = int(argument_list.bh_offset, 16)
+            else:
+                self.bh_offset = INVALID_INPUT
+
 def _create_parser(arg_list):
     """create argument parser according to pre-defined arguments
 
@@ -184,6 +199,7 @@ def _create_parser(arg_list):
     """
 
     parser = argparse.ArgumentParser(conflict_handler='resolve', allow_abbrev=False)
+    parser.add_argument("-mode", nargs='?', dest="mode")
     parser.add_argument("-i", nargs='?', dest="input")
     parser.add_argument("-o", nargs='?', dest="output")
     parser.add_argument("-chip", dest="chip")
@@ -197,6 +213,8 @@ def _create_parser(arg_list):
     parser.add_argument("-spiclkratio", nargs='?',
                         dest="spi_flash_clock_ratio")
     parser.add_argument("-spireadmode", nargs='?', dest="spi_read_mode")
+    parser.add_argument("-pointer", nargs='?', dest="pointer")
+    parser.add_argument("-bhoffset", nargs='?', dest="bh_offset")
     parser.add_argument("-flashsize", nargs='?', dest="flash_size")
     parser.add_argument("-ph", nargs='?', dest="paste_firmware_header")
 
