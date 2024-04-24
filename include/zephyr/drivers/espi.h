@@ -317,6 +317,14 @@ struct espi_evt_data_acpi {
 	uint32_t reserved:16;
 };
 
+struct espi_evt_post {
+	union {
+		uint32_t code32;
+		uint8_t code[4];
+	};
+};
+
+
 /**
  * @brief eSPI event
  */
