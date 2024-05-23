@@ -114,7 +114,7 @@ foreach(flag ${llext_cflags})
 endforeach()
 set(llext_cflags ${new_cflags})
 
-cmake_path(CONVERT "${INTERFACE_INCLUDE_DIRECTORIES}" TO_CMAKE_PATH_LIST include_dirs)
+string(REPLACE "|" ";" include_dirs "${INTERFACE_INCLUDE_DIRECTORIES}")
 
 set(autoconf_h_edk ${llext_edk_inc}/${AUTOCONF_H})
 cmake_path(RELATIVE_PATH AUTOCONF_H BASE_DIRECTORY ${PROJECT_BINARY_DIR} OUTPUT_VARIABLE autoconf_h_rel)
