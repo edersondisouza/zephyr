@@ -88,7 +88,9 @@ string(REGEX REPLACE "[^a-zA-Z0-9]" "_" llext_edk_name_sane ${llext_edk_name})
 string(TOUPPER ${llext_edk_name_sane} llext_edk_name_sane)
 set(install_dir_var "${llext_edk_name_sane}_INSTALL_DIR")
 
+message(WARNING "llext_cfgs = ${llext_cflags}")
 separate_arguments(llext_cflags NATIVE_COMMAND ${llext_cflags})
+message(WARNING "llext_cfgs = ${llext_cflags}")
 
 set(make_relative FALSE)
 foreach(flag ${llext_cflags})
@@ -113,13 +115,15 @@ foreach(flag ${llext_cflags})
 endforeach()
 set(llext_cflags ${new_cflags})
 
-string(REPLACE "|" ";" include_dirs "${INTERFACE_INCLUDE_DIRECTORIES}")
 
 list(APPEND base_flags_make ${llext_cflags} ${imacros_make})
 list(APPEND base_flags_cmake ${llext_cflags} ${imacros_cmake})
 
+message(WARNING "INTERFACE_INCLUDE_DIRECTORIES = ${INTERFACE_INCLUDE_DIRECTORIES}")
+separate_arguments(include_dirs NATIVE_COMMAND ${INTERFACE_INCLUDE_DIRECTORIES})
 file(MAKE_DIRECTORY ${llext_edk_inc})
 foreach(dir ${include_dirs})
+    message(WARNING "dir = ${dir}")
     if (NOT EXISTS ${dir})
         continue()
     endif()

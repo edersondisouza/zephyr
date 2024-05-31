@@ -15,3 +15,4 @@ project(app LANGUAGES C)
 
 target_sources(app PRIVATE src/main.c src/pubsub.c)
 zephyr_include_directories(include)
+zephyr_include_directories("inc lude")
