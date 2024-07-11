@@ -136,6 +136,7 @@ struct host_sub_npcx_config {
 	struct c2h_reg *const inst_c2h;
 	struct kbc_reg *const inst_kbc;
 	struct pmch_reg *const inst_pm_acpi;
+	struct pmch_reg *const inst_pm_acpi2;
 	struct pmch_reg *const inst_pm_hcmd;
 	/* clock configuration */
 	const uint8_t clks_size;
@@ -172,6 +173,7 @@ struct host_sub_npcx_config host_sub_cfg = {
 	.inst_c2h = (struct c2h_reg *)DT_INST_REG_ADDR_BY_NAME(0, c2h),
 	.inst_kbc = (struct kbc_reg *)DT_INST_REG_ADDR_BY_NAME(0, kbc),
 	.inst_pm_acpi = (struct pmch_reg *)DT_INST_REG_ADDR_BY_NAME(0, pm_acpi),
+	.inst_pm_acpi2 = (struct pmch_reg *)DT_INST_REG_ADDR_BY_NAME(0, pm_acpi2),
 	.inst_pm_hcmd = (struct pmch_reg *)DT_INST_REG_ADDR_BY_NAME(0, pm_hcmd),
 	.host_acc_wui = NPCX_DT_WUI_ITEM_BY_NAME(0, host_acc_wui),
 	.clks_size = ARRAY_SIZE(host_dev_clk_cfg),
@@ -197,6 +199,7 @@ struct host_sub_npcx_data host_sub_data;
 #define EC_CFG_LDN_SHM   0x0F
 #define EC_CFG_LDN_ACPI  0x11 /* PM Channel 1 */
 #define EC_CFG_LDN_HCMD  0x12 /* PM Channel 2 */
+#define EC_CFG_LDN_ACPI2 0x17 /* PM Channel 3 */
 
 /* Index of EC (4E/4F) Configuration Register */
 #define EC_CFG_IDX_LDN            0x07
@@ -358,6 +361,30 @@ static void host_acpi_process_input_data(uint8_t data)
 							evt);
 }
 
+static void host_acpi_pvt_process_input_data(uint8_t data)
+{
+	struct pmch_reg *const inst_acpi2 = host_sub_cfg.inst_pm_acpi2;
+	struct espi_event evt = {
+		.evt_type = ESPI_BUS_PERIPHERAL_NOTIFICATION,
+		.evt_details = ESPI_PERIPHERAL_HOST_IO_PVT,
+		.evt_data = ESPI_PERIPHERAL_NODATA
+	};
+	struct espi_evt_data_acpi *acpi_evt =
+				(struct espi_evt_data_acpi *)&evt.evt_data;
+
+	/*
+	 * Indicates if the host sent a command or data.
+	 * 0 = data
+	 * 1 = Command.
+	 */
+	acpi_evt->type = IS_BIT_SET(inst_acpi2->HIPMST, NPCX_HIPMST_CMD);
+	acpi_evt->data = data;
+	LOG_INF("%s: acpi type %d", __func__, acpi_evt->type);
+
+	espi_send_callbacks(host_sub_data.callbacks, host_sub_data.host_bus_dev,
+							evt);
+}
+
 static void host_acpi_init(void)
 {
 	struct pmch_reg *const inst_acpi = host_sub_cfg.inst_pm_acpi;
@@ -382,6 +409,23 @@ static void host_acpi_init(void)
 	 * 2. BIT 7 must be 1.
 	 */
 	inst_acpi->HIPMCTL |= BIT(7) | BIT(NPCX_HIPMCTL_IBFIE);
+}
+
+static void host_acpi_pvt_init(void)
+{
+	struct pmch_reg *const inst_acpi2 = host_sub_cfg.inst_pm_acpi2;
+
+	inst_acpi2->HIPMCTL &= ~BIT(NPCX_HIPMCTL_SCIPOL);
+	inst_acpi2->HIPMIC &= ~BIT(NPCX_HIPMIC_SMIPOL);
+	inst_acpi2->HIPMIC |= BIT(NPCX_HIPMIC_SMIB) | BIT(NPCX_HIPMIC_SCIB);
+	inst_acpi2->HIPMIE |= BIT(NPCX_HIPMIE_SCIE);
+	inst_acpi2->HIPMIE |= BIT(NPCX_HIPMIE_SMIE);
+	inst_acpi2->HIPMCTL |= BIT(7) | BIT(NPCX_HIPMCTL_IBFIE);
+
+	LOG_DBG("PM3 HIPMCTL %x", inst_acpi2->HIPMCTL);
+	LOG_DBG("PM3 HIPMIC %x", inst_acpi2->HIPMIC);
+	LOG_DBG("PM3 HIPMIE %x", inst_acpi2->HIPMIE);
+	LOG_DBG("PM3 HIPMCTL %x", inst_acpi2->HIPMCTL);
 }
 #endif
 
@@ -472,7 +516,17 @@ static void host_pmch_ibf_isr(const void *arg)
 	ARG_UNUSED(arg);
 	struct pmch_reg *const inst_acpi = host_sub_cfg.inst_pm_acpi;
 	struct pmch_reg *const inst_hcmd = host_sub_cfg.inst_pm_hcmd;
+	struct pmch_reg *const inst_acpi2 = host_sub_cfg.inst_pm_acpi2;
 	uint8_t in_data = 0;
+
+	/* Host put data on input buffer of ACPI channel */
+	if (IS_BIT_SET(inst_acpi2->HIPMST, NPCX_HIPMST_IBF)) {
+		/* Set processing flag before reading command byte */
+		inst_acpi2->HIPMST |= BIT(NPCX_HIPMST_F0);
+#if defined(CONFIG_ESPI_PERIPHERAL_HOST_IO)
+		host_acpi_pvt_process_input_data(in_data);
+#endif
+	}
 
 	/* Host put data on input buffer of ACPI channel */
 	if (IS_BIT_SET(inst_acpi->HIPMST, NPCX_HIPMST_IBF)) {
@@ -1019,6 +1073,12 @@ void npcx_host_init_subs_host_domain(void)
 		 */
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_ACPI);
 		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, EC_CFG_IDX_CTRL_LDN_ENABLE);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_LDN, EC_CFG_LDN_ACPI2);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_H, 0x06);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CMD_IO_ADDR_L, 0xA4);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_H, 0x06);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_DATA_IO_ADDR_L, 0xA0);
+		host_c2h_write_io_cfg_reg(EC_CFG_IDX_CTRL, EC_CFG_IDX_CTRL_LDN_ENABLE);
 	}
 
 	if (IS_ENABLED(CONFIG_ESPI_PERIPHERAL_EC_HOST_CMD) ||
@@ -1144,6 +1204,7 @@ int npcx_host_init_subs_core_domain(const struct device *host_bus_dev,
 #endif
 #if defined(CONFIG_ESPI_PERIPHERAL_HOST_IO)
 	host_acpi_init();
+	host_acpi_pvt_init();
 #endif
 #if defined(CONFIG_ESPI_PERIPHERAL_EC_HOST_CMD)
 	host_hcmd_init();
