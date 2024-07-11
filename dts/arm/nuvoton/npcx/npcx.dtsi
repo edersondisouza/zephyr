@@ -384,9 +384,10 @@
 			       0x4000e000 0x2000
 			       0x400c7000 0x2000
 			       0x400c9000 0x2000
-			       0x400cb000 0x2000>;
+			       0x400cb000 0x2000
+			       0x400cd000 0x2000>;
 			reg-names = "mswc", "shm", "c2h", "kbc", "pm_acpi",
-				    "pm_hcmd";
+				    "pm_hcmd", "pm_acpi2";
 
 			/* host sub-module IRQ and priority */
 			interrupts = <25 3>, /* KBC Input-Buf-Full (IBF) */
