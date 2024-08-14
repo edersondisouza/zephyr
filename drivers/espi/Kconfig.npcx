@@ -66,6 +66,8 @@ config ESPI_TAF_NPCX
 	  This option enables the Intel Enhanced Serial Peripheral Interface
 	  Target Attached Flash (eSPI TAF) for NPCX4 family of processors.
 
+if ESPI_TAF_NPCX
+
 choice ESPI_TAF_ACCESS_MODE_CHOICE
 	prompt "eSPI TAF Read Access Mode"
 	default ESPI_TAF_AUTO_MODE
@@ -88,6 +90,7 @@ config ESPI_TAF_PR_NUM
 	help
 	  This size is display how many group of slave attached flash protection
 	  region.
+endif
 
 # The default value 'y' for the existing options if ESPI_NPCX is selected.
 if ESPI_NPCX
