@@ -235,6 +235,8 @@ source "drivers/flash/Kconfig.nrf_mram"
 
 source "drivers/flash/Kconfig.numaker_rmc"
 
+source "drivers/flash/Kconfig.aardvark_i2c"
+
 module = FLASH
 module-str = flash
 source "subsys/logging/Kconfig.template.log_config"

@@ -1,0 +1,10 @@
+description: Aardvarn I2C flash controller
+
+compatible: "aardvark,i2c-flash-controller"
+
+include: flash-controller.yaml
+
+properties:
+  device:
+    type: phandle
+    description: The I2C device node

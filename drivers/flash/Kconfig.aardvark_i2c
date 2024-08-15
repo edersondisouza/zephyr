@@ -1,0 +1,19 @@
+config FLASH_AARDVARK_I2C
+	bool "Aardvark I2C Host Adapter"
+	depends on I2C && DT_HAS_AARDVARK_I2C_FLASH_CONTROLLER_ENABLED
+	select FLASH_HAS_DRIVER_ENABLED
+	select FLASH_HAS_PAGE_LAYOUT
+	help
+	  Say Y here if you have an Aardvark I2C Host Adapter from
+	  Total Phase.
+
+if FLASH_AARDVARK_I2C
+
+config FLASH_AARDVARK_I2C_INIT_PRIORITY
+	int "Aardvark I2C Host Adapter init priority"
+	default 99
+	help
+	  This option sets the priority of the Aardvark I2C/SPI Host Adapter
+	  initialization. Must be higher than that of the I2C bus driver.
+
+endif # FLASH_AARDVARK_I2C
