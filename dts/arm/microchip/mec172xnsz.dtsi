@@ -44,8 +44,15 @@
 		};
 	};
 
-	flash0: flash@c0000 {
-		reg = <0x000C0000 0x58000>;
+	flash_ctrl_dummy: flash_ctrl_dummy {
+		status = "disabled";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		flash0: flash@c0000 {
+			reg = <0x000C0000 0x58000>;
+		};
 	};
 
 	sram0: memory@118000 {
