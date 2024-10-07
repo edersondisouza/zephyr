@@ -8,5 +8,7 @@
  */
 #include <soc_common.h>
 
+#include "../common/soc_gpio.h"
+#include "../common/soc_pins.h"
 
 #endif /* __RISCV_ITE_SOC_H_ */
