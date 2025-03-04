@@ -15,15 +15,22 @@ endif()
 include(${LLEXT_EDK_INSTALL_DIR}/cmake.cflags)
 
 # Add LLEXT_CFLAGS to our flags
-set(CMAKE_C_FLAGS ${LLEXT_CFLAGS} "-c")
+set(CMAKE_C_FLAGS ${LLEXT_CFLAGS} "-I${PROJECT_SOURCE_DIR}/include" "-c")
 
 add_custom_command(
     OUTPUT
         ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.llext
         ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.inc
     COMMAND ${CMAKE_C_COMPILER} ${CMAKE_C_FLAGS}
-        -o ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.llext
+        -o ${PROJECT_BINARY_DIR}/main.o
         ${PROJECT_SOURCE_DIR}/src/main.c
+    COMMAND ${CMAKE_C_COMPILER} ${CMAKE_C_FLAGS}
+        -o ${PROJECT_BINARY_DIR}/pub.o
+        ${PROJECT_SOURCE_DIR}/src/pub.c
+    COMMAND ${CMAKE_LINKER} -r
+        ${PROJECT_BINARY_DIR}/main.o
+        ${PROJECT_BINARY_DIR}/pub.o
+        -o ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.llext
     COMMAND xxd -ip ${PROJECT_NAME}.llext
         ${PROJECT_NAME}.inc
 )

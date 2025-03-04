@@ -9,6 +9,8 @@
 
 #include <app_api.h>
 
+#include <ext2.h>
+
 int start(void)
 {
 	int i;
@@ -17,7 +19,7 @@ int start(void)
 		struct channel_tick_data ctd = { .l = i };
 
 		printk("[ext2]Publishing tick\n");
-		publish(CHAN_TICK, &ctd, sizeof(ctd));
+		internal_pub(CHAN_TICK, &ctd, sizeof(ctd));
 		k_sleep(K_SECONDS(1));
 	}
 
