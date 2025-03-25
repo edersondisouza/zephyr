@@ -17,3 +17,8 @@ config BOARD_QEMU_X86_LAKEMONT
 config BOARD_QEMU_X86_TINY
 	bool
 	select CPU_HAS_FPU
+
+config BOARD_QEMU_X86_64_KVM
+	bool
+	select X86_64
+	select X86_CPU_HAS_CET
