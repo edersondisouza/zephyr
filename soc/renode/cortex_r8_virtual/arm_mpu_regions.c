@@ -63,6 +63,14 @@ static const struct arm_mpu_region mpu_regions[] = {
 		{.rasr = P_RW_U_NA_Msk |
 			 DEVICE_SHAREABLE |
 			 NOT_EXEC}),
+
+	MPU_REGION_ENTRY(
+		"afl",
+		0x80000000,
+		REGION_64K,
+		{.rasr = P_RO_U_RO_Msk |
+			 NORMAL_OUTER_INNER_WRITE_BACK_NON_SHAREABLE |
+			 NOT_EXEC}),
 };
 
 const struct arm_mpu_config mpu_config = {
