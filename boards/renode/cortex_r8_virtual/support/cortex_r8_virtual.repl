@@ -20,6 +20,9 @@ privateTimer0: Timers.ARM_PrivateTimer @ {
     -> gic#0@29
     frequency: 667000000
 
+afl: Memory.MappedMemory @ sysbus 0x80000000
+    size: 0x10000
+
 mem: Memory.MappedMemory @ sysbus 0x0
     size: 0x8000000
 

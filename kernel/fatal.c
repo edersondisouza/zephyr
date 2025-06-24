@@ -45,8 +45,8 @@ __weak void k_sys_fatal_error_handler(unsigned int reason,
 	EXCEPTION_DUMP("Resetting system");
 	sys_reboot(SYS_REBOOT_WARM);
 #else
-	EXCEPTION_DUMP("Halting system");
-	arch_system_halt(reason);
+	EXCEPTION_DUMP("Halting system %u", reason);
+	arch_system_halt(22);
 #endif /* CONFIG_RESET_ON_FATAL_ERROR */
 
 	CODE_UNREACHABLE;

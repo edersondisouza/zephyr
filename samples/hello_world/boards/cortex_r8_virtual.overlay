@@ -1,0 +1,7 @@
+/ {
+    sram_afl: memory@80000000 {
+        status = "okay";
+        compatible = "mmio-sram";
+        reg = <0x80000000 0x10000>; // 64KB SRAM
+    };
+};

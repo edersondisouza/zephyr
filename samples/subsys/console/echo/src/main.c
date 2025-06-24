@@ -16,8 +16,12 @@ int main(void)
 	printk("the (interrupt-driven) console device doesn't work as expected:\n");
 	console_write(NULL, prompt, sizeof(prompt) - 1);
 
+	void (*crash)(void) = NULL;
 	while (1) {
 		uint8_t c = console_getchar();
+		if (c == 'a') {
+			crash();
+		}
 
 		console_putchar(c);
 		if (c == '\r') {
