@@ -49,7 +49,7 @@ static const struct device *lvgl_keypad =
 #endif /* CONFIG_LV_Z_KEYPAD_INPUT */
 
 
-static const struct device *lcd_bl = DEVICE_DT_GET(DT_PARENT(DT_NODELABEL(led)));
+//static const struct device *lcd_bl = DEVICE_DT_GET(DT_PARENT(DT_NODELABEL(led)));
 
 static void lv_btn_click_callback(lv_event_t *e)
 {
@@ -73,7 +73,7 @@ int main(void)
 		return 0;
 	}
 
-	led_on(lcd_bl, 0);
+//	led_on(lcd_bl, 0);
 
 #ifdef CONFIG_RESET_COUNTER_SW0
 	if (gpio_is_ready_dt(&button_gpio)) {

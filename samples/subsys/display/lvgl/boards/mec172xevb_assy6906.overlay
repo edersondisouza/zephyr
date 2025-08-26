@@ -1,0 +1,108 @@
+#include <zephyr/dt-bindings/display/panel.h>
+
+/ {
+
+    /* VCC J32 Pin 1 */
+    /* GND J32 Pin 6 */
+
+    chosen {
+        zephyr,display = &gc9a01;
+        zephyr,touch = &cst816s;
+    };
+
+    mipi_dbi {
+        compatible = "zephyr,mipi-dbi-spi";
+        status = "okay";
+        spi-dev = <&spi0>;
+        dc-gpios = <MCHP_GPIO_DECODE_132 GPIO_ACTIVE_HIGH>; /* GPIO_132, J18 Pin 3 */
+        reset-gpios = <MCHP_GPIO_DECODE_140 GPIO_ACTIVE_LOW>; /* GPIO_140, J18 Pin 1 */
+        #address-cells = <1>;
+        #size-cells = <0>;
+        write-only;
+
+        gc9a01: gc9a01@0 {
+            /* GPSPI CLK J31 Pin 4 */
+            /* GPSPI MOSI J31 Pin 6 */
+            /* GPSPI MISO J31 Pin 8 */
+            /* GPSPI CS J31 Pin 2 */
+            compatible = "galaxycore,gc9x01x";
+            reg = <0>;
+//            mipi-max-frequency = <DT_FREQ_M(2)>;
+            mipi-max-frequency = <DT_FREQ_M(48)>;
+            pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+            width = <240>;
+            height = <240>;
+            display-inversion;
+//            mipi-cpol;
+//            mipi-cpha;
+        };
+    };
+
+    lvgl_pointer {
+        compatible = "zephyr,lvgl-pointer-input";
+        status = "okay";
+        input = <&cst816s>;
+    };
+
+    lcd_backlight {
+        compatible = "gpio-leds";
+        status = "okay";
+
+        led: led {
+            gpios = <MCHP_GPIO_DECODE_153 GPIO_ACTIVE_HIGH>;
+        };
+    };
+};
+
+&pinctrl {
+
+	gpspi_cs_n_gpio024: gpspi_cs_n_gpio024 {
+		pinmux = < MCHP_XEC_PINMUX(024, MCHP_AF1) >;
+	};
+
+	gpspi_clk_gpio023: gpspi_clk_gpio023 {
+		pinmux = < MCHP_XEC_PINMUX(023, MCHP_AF1) >;
+	};
+
+	gpspi_io0_gpio245: gpspi_io0_gpio245 {
+		pinmux = < MCHP_XEC_PINMUX(0245, MCHP_AF1) >;
+	};
+
+	gpspi_io1_gpio243: gpspi_io1_gpio243 {
+		pinmux = < MCHP_XEC_PINMUX(0243, MCHP_AF1) >;
+	};
+
+	gpspi_io2_gpio034: gpspi_io2_gpio034 {
+		pinmux = < MCHP_XEC_PINMUX(034, MCHP_AF1) >;
+	};
+
+	gpspi_io3_gpio022: gpspi_io3_gpio022 {
+		pinmux = < MCHP_XEC_PINMUX(022, MCHP_AF1) >;
+	};
+
+};
+
+&spi0 {
+    lines = <1>;
+    clock-frequency = <2000000>;
+    pinctrl-0 = < &gpspi_cs_n_gpio024
+    &gpspi_clk_gpio023
+    &gpspi_io0_gpio245
+    &gpspi_io1_gpio243
+    &gpspi_io2_gpio034
+    &gpspi_io3_gpio022 >;
+
+};
+
+&i2c_smb_2 {
+    status = "okay";
+    /* I2C7 SDA, J19 Pin 3 */
+    /* I2C7 SCL, J19 Pin 1 */
+    cst816s: cst816s@15 {
+        compatible = "hynitron,cst816s";
+        status = "okay";
+        reg = <0x15>;
+        irq-gpios = <MCHP_GPIO_DECODE_156 GPIO_ACTIVE_LOW>; /* GPIO_156, JP71 Pin 11 */
+        rst-gpios = <MCHP_GPIO_DECODE_157 GPIO_ACTIVE_LOW>; /* GPIO_157, JP71 Pin 13 */
+    };
+};
