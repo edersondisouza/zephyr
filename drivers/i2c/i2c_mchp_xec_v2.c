@@ -399,6 +399,8 @@ recov_exit:
 	regs->CTRLSTS = MCHP_I2C_SMB_CTRL_PIN; /* clear status */
 	i2c_xec_reset_config(dev); /* reset controller */
 
+	LOG_INF("Recovery result %d", ret);
+
 	return ret;
 }
 

@@ -44,6 +44,8 @@ static int led_gpio_init(const struct device *dev)
 	const struct led_gpio_config *config = dev->config;
 	int err = 0;
 
+	LOG_WRN("Initializing %s with %zu LEDs", dev->name, config->num_leds);
+
 	if (!config->num_leds) {
 		LOG_ERR("%s: no LEDs found (DT child nodes missing)", dev->name);
 		err = -ENODEV;

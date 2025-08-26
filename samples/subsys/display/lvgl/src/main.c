@@ -8,6 +8,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/led.h>
 #include <lvgl.h>
 #include <stdio.h>
 #include <string.h>
@@ -47,9 +48,14 @@ static const struct device *lvgl_keypad =
 	DEVICE_DT_GET(DT_COMPAT_GET_ANY_STATUS_OKAY(zephyr_lvgl_keypad_input));
 #endif /* CONFIG_LV_Z_KEYPAD_INPUT */
 
+
+static const struct device *lcd_bl = DEVICE_DT_GET(DT_PARENT(DT_NODELABEL(led)));
+
 static void lv_btn_click_callback(lv_event_t *e)
 {
 	ARG_UNUSED(e);
+
+	LOG_INF("Click callback");
 
 	count = 0;
 }
@@ -66,6 +72,8 @@ int main(void)
 		LOG_ERR("Device not ready, aborting test");
 		return 0;
 	}
+
+	led_on(lcd_bl, 0);
 
 #ifdef CONFIG_RESET_COUNTER_SW0
 	if (gpio_is_ready_dt(&button_gpio)) {
@@ -124,6 +132,7 @@ int main(void)
 #endif /* CONFIG_LV_Z_KEYPAD_INPUT */
 
 	if (IS_ENABLED(CONFIG_LV_Z_POINTER_INPUT)) {
+		LOG_INF("Pointer input enabled, creating button");
 		lv_obj_t *hello_world_button;
 
 		hello_world_button = lv_button_create(lv_screen_active());

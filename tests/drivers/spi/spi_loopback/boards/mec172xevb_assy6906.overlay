@@ -4,12 +4,47 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+&pinctrl {
+
+	gpspi_cs_n_gpio024: gpspi_cs_n_gpio024 {
+		pinmux = < MCHP_XEC_PINMUX(024, MCHP_AF1) >;
+	};
+
+	gpspi_clk_gpio023: gpspi_clk_gpio023 {
+		pinmux = < MCHP_XEC_PINMUX(023, MCHP_AF1) >;
+	};
+
+	gpspi_io0_gpio245: gpspi_io0_gpio245 {
+		pinmux = < MCHP_XEC_PINMUX(0245, MCHP_AF1) >;
+	};
+
+	gpspi_io1_gpio243: gpspi_io1_gpio243 {
+		pinmux = < MCHP_XEC_PINMUX(0243, MCHP_AF1) >;
+	};
+
+	gpspi_io2_gpio034: gpspi_io2_gpio034 {
+		pinmux = < MCHP_XEC_PINMUX(034, MCHP_AF1) >;
+	};
+
+	gpspi_io3_gpio022: gpspi_io3_gpio022 {
+		pinmux = < MCHP_XEC_PINMUX(022, MCHP_AF1) >;
+	};
+
+};
+
 &spi0 {
 	status = "okay";
 	compatible = "microchip,xec-qmspi-ldma";
 	clock-frequency = <12000000>;
 	lines = <1>;
 	chip-select = <0>;
+
+    pinctrl-0 = < &gpspi_cs_n_gpio024
+    &gpspi_clk_gpio023
+    &gpspi_io0_gpio245
+    &gpspi_io1_gpio243
+    &gpspi_io2_gpio034
+    &gpspi_io3_gpio022 >;
 
 	slow@0 {
 		compatible = "test-spi-loopback-slow";

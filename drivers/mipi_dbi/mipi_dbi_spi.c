@@ -277,6 +277,7 @@ static int mipi_dbi_spi_write_helper(const struct device *dev,
 	if (dbi_config->mode == MIPI_DBI_MODE_SPI_4WIRE) {
 
 #if MIPI_DBI_SPI_WRITE_8BIT_REQUIRED
+#warning "8-bit SPI write helper"
 		if (config->xfr_min_bits == MIPI_DBI_SPI_XFR_8BIT) {
 			ret = mipi_dbi_spi_write_helper_4wire_8bit(
 							dev, dbi_config,
@@ -287,6 +288,7 @@ static int mipi_dbi_spi_write_helper(const struct device *dev,
 #endif
 
 #if MIPI_DBI_SPI_WRITE_16BIT_REQUIRED
+#warning "16-bit SPI write helper"
 		if (config->xfr_min_bits == MIPI_DBI_SPI_XFR_16BIT) {
 			ret = mipi_dbi_spi_write_helper_4wire_16bit(
 							dev, dbi_config,
@@ -302,6 +304,9 @@ static int mipi_dbi_spi_write_helper(const struct device *dev,
 	ret = -ENOTSUP;
 
 out:
+	if (ret)
+		LOG_WRN("mipi dbi spi write: cmd_present %d, cmd 0x%x, len %zu, ret %d mode %d",
+			cmd_present, cmd, len, ret, dbi_config->mode);
 	k_mutex_unlock(&data->lock);
 	return ret;
 }
@@ -510,9 +515,12 @@ static int mipi_dbi_spi_release(const struct device *dev,
 static int mipi_dbi_spi_init(const struct device *dev)
 {
 	const struct mipi_dbi_spi_config *config = dev->config;
+	const struct mipi_dbi_config *dbi_config = config->spi_dev->config;
 	struct mipi_dbi_spi_data *data = dev->data;
 	int ret;
 
+	LOG_WRN("init mipi dbi");
+	
 	if (!device_is_ready(config->spi_dev)) {
 		LOG_ERR("SPI device is not ready");
 		return -ENODEV;
@@ -520,6 +528,7 @@ static int mipi_dbi_spi_init(const struct device *dev)
 
 	if (mipi_dbi_has_pin(&config->cmd_data)) {
 		if (!gpio_is_ready_dt(&config->cmd_data)) {
+			LOG_ERR("Command/data GPIO is not ready");
 			return -ENODEV;
 		}
 		ret = gpio_pin_configure_dt(&config->cmd_data, GPIO_OUTPUT);
@@ -531,6 +540,7 @@ static int mipi_dbi_spi_init(const struct device *dev)
 
 	if (mipi_dbi_has_pin(&config->reset)) {
 		if (!gpio_is_ready_dt(&config->reset)) {
+			LOG_ERR("Reset GPIO is not ready");
 			return -ENODEV;
 		}
 		ret = gpio_pin_configure_dt(&config->reset, GPIO_OUTPUT_INACTIVE);
@@ -539,6 +549,10 @@ static int mipi_dbi_spi_init(const struct device *dev)
 			return ret;
 		}
 	}
+
+	LOG_WRN("SPI device %s, mode %d, xfr_min_bits %d operation 0x%x",
+		config->spi_dev->name, dbi_config->mode,
+		config->xfr_min_bits, dbi_config->config.operation);
 
 	k_mutex_init(&data->lock);
 

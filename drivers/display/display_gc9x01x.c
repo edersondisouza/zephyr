@@ -239,10 +239,12 @@ static int gc9x01x_regs_init(const struct device *dev)
 	/* Enable inter-command mode */
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_INREGEN1, NULL, 0);
 	if (ret < 0) {
+		LOG_ERR("Could not enable inter-command mode (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_INREGEN2, NULL, 0);
 	if (ret < 0) {
+		LOG_ERR("Could not enable inter-command mode 2 (%d)", ret);
 		return ret;
 	}
 
@@ -258,41 +260,50 @@ static int gc9x01x_regs_init(const struct device *dev)
 	/* Apply generic configuration */
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_PWRCTRL2, regs->pwrctrl2, sizeof(regs->pwrctrl2));
 	if (ret < 0) {
+		LOG_ERR("Could not set power control 2 (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_PWRCTRL3, regs->pwrctrl3, sizeof(regs->pwrctrl3));
 	if (ret < 0) {
+		LOG_ERR("Could not set power control 3 (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_PWRCTRL4, regs->pwrctrl4, sizeof(regs->pwrctrl4));
 	if (ret < 0) {
+		LOG_ERR("Could not set power control 4 (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_GAMMA1, regs->gamma1, sizeof(regs->gamma1));
 	if (ret < 0) {
+		LOG_ERR("Could not set gamma 1 (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_GAMMA2, regs->gamma2, sizeof(regs->gamma2));
 	if (ret < 0) {
+		LOG_ERR("Could not set gamma 2 (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_GAMMA3, regs->gamma3, sizeof(regs->gamma3));
 	if (ret < 0) {
+		LOG_ERR("Could not set gamma 3 (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_GAMMA4, regs->gamma4, sizeof(regs->gamma4));
 	if (ret < 0) {
+		LOG_ERR("Could not set gamma 4 (%d)", ret);
 		return ret;
 	}
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_FRAMERATE, regs->framerate,
 			       sizeof(regs->framerate));
 	if (ret < 0) {
+		LOG_ERR("Could not set framerate (%d)", ret);
 		return ret;
 	}
 
 	/* Enable Tearing line */
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_TEON, NULL, 0);
 	if (ret < 0) {
+		LOG_ERR("Could not enable tearing line (%d)", ret);
 		return ret;
 	}
 
@@ -305,6 +316,7 @@ static int gc9x01x_exit_sleep(const struct device *dev)
 
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_SLPOUT, NULL, 0);
 	if (ret < 0) {
+		LOG_ERR("Could not exit sleep mode (%d)", ret);
 		return ret;
 	}
 
@@ -345,6 +357,7 @@ static int gc9x01x_hw_reset(const struct device *dev)
 
 	ret = mipi_dbi_reset(config->mipi_dev, 100);
 	if (ret < 0) {
+		LOG_ERR("Could not reset display (%d)", ret);
 		return ret;
 	}
 	k_msleep(10);
@@ -354,13 +367,13 @@ static int gc9x01x_hw_reset(const struct device *dev)
 
 static int gc9x01x_display_blanking_off(const struct device *dev)
 {
-	LOG_DBG("Turning display blanking off");
+	LOG_WRN("Turning display blanking off");
 	return gc9x01x_transmit(dev, GC9X01X_CMD_DISPON, NULL, 0);
 }
 
 static int gc9x01x_display_blanking_on(const struct device *dev)
 {
-	LOG_DBG("Turning display blanking on");
+	LOG_WRN("Turning display blanking on");
 	return gc9x01x_transmit(dev, GC9X01X_CMD_DISPOFF, NULL, 0);
 }
 
@@ -385,6 +398,7 @@ static int gc9x01x_set_pixel_format(const struct device *dev,
 
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_PIXFMT, &tx_data, 1U);
 	if (ret < 0) {
+		LOG_ERR("Could not set pixel format");
 		return ret;
 	}
 
@@ -416,6 +430,7 @@ static int gc9x01x_set_orientation(const struct device *dev,
 
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_MADCTL, &tx_data, 1U);
 	if (ret < 0) {
+		LOG_ERR("Could not set orientation (%d)", ret);
 		return ret;
 	}
 
@@ -432,18 +447,21 @@ static int gc9x01x_configure(const struct device *dev)
 	/* Set all the required registers. */
 	ret = gc9x01x_regs_init(dev);
 	if (ret < 0) {
+		LOG_ERR("Could not init regs");
 		return ret;
 	}
 
 	/* Pixel format */
 	ret = gc9x01x_set_pixel_format(dev, config->pixel_format);
 	if (ret < 0) {
+		LOG_ERR("Could not set pixel format (%d)", ret);
 		return ret;
 	}
 
 	/* Orientation */
 	ret = gc9x01x_set_orientation(dev, config->orientation);
 	if (ret < 0) {
+		LOG_ERR("Could not set orientation (%d)", ret);
 		return ret;
 	}
 
@@ -451,6 +469,7 @@ static int gc9x01x_configure(const struct device *dev)
 	if (config->inversion) {
 		ret = gc9x01x_transmit(dev, GC9X01X_CMD_INVON, NULL, 0);
 		if (ret < 0) {
+			LOG_ERR("Could not enable inversion (%d)", ret);
 			return ret;
 		}
 	}
@@ -461,6 +480,11 @@ static int gc9x01x_configure(const struct device *dev)
 static int gc9x01x_init(const struct device *dev)
 {
 	int ret;
+	const struct gc9x01x_config *config = dev->config;
+
+	LOG_WRN("Initializing GC9X01X display driver");
+
+	LOG_WRN("SPI config freq %u operation 0x%x slave %u", config->dbi_config.config.frequency, config->dbi_config.config.operation, config->dbi_config.config.slave);
 
 	gc9x01x_hw_reset(dev);
 
@@ -491,6 +515,7 @@ static int gc9x01x_set_mem_area(const struct device *dev, const uint16_t x, cons
 	spi_data[1] = sys_cpu_to_be16(x + w - 1U);
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_COLSET, &spi_data[0], 4U);
 	if (ret < 0) {
+		LOG_ERR("Could not set mem area col");
 		return ret;
 	}
 
@@ -498,6 +523,7 @@ static int gc9x01x_set_mem_area(const struct device *dev, const uint16_t x, cons
 	spi_data[1] = sys_cpu_to_be16(y + h - 1U);
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_ROWSET, &spi_data[0], 4U);
 	if (ret < 0) {
+		LOG_ERR("Could not set mem area row");
 		return ret;
 	}
 
@@ -520,9 +546,10 @@ static int gc9x01x_write(const struct device *dev, const uint16_t x, const uint1
 	__ASSERT((desc->pitch * data->bytes_per_pixel * desc->height) <= desc->buf_size,
 		 "Input buffer too small");
 
-	LOG_DBG("Writing %dx%d (w,h) @ %dx%d (x,y)", desc->width, desc->height, x, y);
+	LOG_WRN("Writing %dx%d (w,h) @ %dx%d (x,y)", desc->width, desc->height, x, y);
 	ret = gc9x01x_set_mem_area(dev, x, y, desc->width, desc->height);
 	if (ret < 0) {
+		LOG_ERR("Failed to write");
 		return ret;
 	}
 
@@ -545,6 +572,7 @@ static int gc9x01x_write(const struct device *dev, const uint16_t x, const uint1
 
 	ret = gc9x01x_transmit(dev, GC9X01X_CMD_MEMWR, NULL, 0);
 	if (ret < 0) {
+		LOG_ERR("Could not set memory write command (%d)", ret);
 		return ret;
 	}
 
@@ -555,6 +583,7 @@ static int gc9x01x_write(const struct device *dev, const uint16_t x, const uint1
 					     &mipi_desc,
 					     data->pixel_format);
 		if (ret < 0) {
+			LOG_ERR("Could not write display (%d)", ret);
 			return ret;
 		}
 

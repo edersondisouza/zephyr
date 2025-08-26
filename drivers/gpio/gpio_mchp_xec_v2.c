@@ -132,6 +132,7 @@ static int gpio_xec_configure(const struct device *dev,
 		| MCHP_GPIO_CTRL_MUX_MASK | MCHP_GPIO_CTRL_INPAD_DIS_MASK);
 
 	if (!(valid_ctrl_masks[config->port_num] & BIT(pin))) {
+		LOG_WRN("Port:%d pin:0x%x not valid", config->port_num, pin);
 		return -EINVAL;
 	}
 
