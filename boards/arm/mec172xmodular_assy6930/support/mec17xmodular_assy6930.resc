@@ -1,0 +1,19 @@
+:name: mec172xmodular_assy6930
+:description: This script is prepared to run Zephyr on a mec172xmodular_assy6930.
+
+$name?="mec172xmodular_assy6930"
+
+using sysbus
+mach create $name
+machine LoadPlatformDescription $ORIGIN/mec17xmodular_assy6930.repl
+
+showAnalyzer uart1
+#cpu PerformanceInMips 4
+
+macro reset
+"""
+    sysbus LoadELF $bin
+    cpu0 VectorTableOffset `sysbus GetSymbolAddress "_vector_table"`
+    cpu0 EnableZephyrMode
+"""
+runMacro $reset
