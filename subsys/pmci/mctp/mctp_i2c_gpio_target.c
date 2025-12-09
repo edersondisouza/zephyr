@@ -45,11 +45,19 @@ int mctp_i2c_gpio_target_write_received(struct i2c_target_config *config, uint8_
 	case MCTP_I2C_GPIO_RX_MSG_LEN_ADDR:
 		b->rxtx = true;
 		b->rx_pkt = mctp_pktbuf_alloc(&b->binding, (size_t)val);
+		b->rx_len = val;
+		b->reg_addr = MCTP_I2C_GPIO_INVALID_ADDR; /* Reset state machine to wait for next register */
 		break;
 	case MCTP_I2C_GPIO_RX_MSG_ADDR:
 		b->rxtx = true;
 		b->rx_pkt->data[b->rx_idx] = val;
 		b->rx_idx += 1;
+
+		if (b->rx_idx == b->rx_len) {
+			/* Full packet received */
+			mctp_bus_rx(&b->binding, b->rx_pkt);
+			break;
+		}
 
 		/* buffer full */
 		if (b->rx_idx >= b->rx_pkt->size) {
