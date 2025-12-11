@@ -1,0 +1,31 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/* GND J8.4 */
+
+&gpio4 {
+    status = "okay";
+};
+
+&uart2 {
+	status = "okay";
+	current-speed = <115200>;
+	/* RX J18.9 */
+	/* TX J18.10 */
+	pinctrl-0 = <&uart2_sin_gp75 &uart2_sout_gp86>;
+	pinctrl-names = "default";
+};
+
+arduino_serial: &uart2 {};
+
+/ {
+	/* SDA J18.2 */
+	/* SCL J18.1 */
+	/* GPIO J17.2 */
+	mctp_i2c: mctp_i2c {
+		compatible = "zephyr,mctp-i2c-gpio-controller";
+		i2c = <&i2c0_0>;
+		endpoint-ids = <11>;
+		endpoint-addrs = <70>;
+		endpoint-gpios = <&gpio4 3 GPIO_ACTIVE_HIGH>;
+	};
+};

@@ -1,0 +1,29 @@
+/*
+ * Copyright (c) 2019 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* GND J8.4 */
+
+&uart2 {
+	status = "okay";
+	current-speed = <115200>;
+	/* RX J18.9 */
+	/* TX J18.10 */
+	pinctrl-0 = <&uart2_sin_gp75 &uart2_sout_gp86>;
+	pinctrl-names = "default";
+};
+
+arduino_serial: &uart2 {};
+
+/ {
+	ntc {
+		compatible = "seeed,grove-temperature";
+		/* VCC J4.3 */
+		/* ADC GND J17.18 */
+		/* ADC A0 J17.12 */
+		io-channels = <&adc0 0>;
+	};
+};
+
