@@ -17,10 +17,14 @@
 LOG_MODULE_REGISTER(grove_temp, CONFIG_SENSOR_LOG_LEVEL);
 
 /* The effect of gain and reference voltage must cancel. */
-#ifdef CONFIG_ADC_NRFX_SAADC
+#if defined(CONFIG_ADC_NRFX_SAADC)
 #define GROVE_GAIN ADC_GAIN_1_4
 #define GROVE_REF ADC_REF_VDD_1_4
 #define GROVE_RESOLUTION 12
+#elif defined(CONFIG_ADC_NPCX)
+#define GROVE_GAIN ADC_GAIN_1
+#define GROVE_REF ADC_REF_INTERNAL
+#define GROVE_RESOLUTION 10
 #else
 #define GROVE_GAIN ADC_GAIN_1
 #define GROVE_REF ADC_REF_VDD_1
@@ -61,15 +65,24 @@ static int gts_channel_get(const struct device *dev,
 {
 	struct gts_data *drv_data = dev->data;
 	const struct gts_config *cfg = dev->config;
-	double dval;
+	double dval, raw;
 
+	raw = drv_data->raw;
+
+#ifdef CONFIG_ADC_NPCX
+	/* NPCX driver doesn't support changing VREF, so adjust the value directly.
+	 * VREF for the sensor should be 2.813V, but VREF for NPCX ADC is 3.3V,
+	 * Making readings a bit higher than actual.
+	 */
+	raw = raw * 2.813 / 3.3;
+#endif
 	/*
 	 * The formula for converting the analog value to degrees Celsius
 	 * is taken from the sensor reference page:
 	 *     http://www.seeedstudio.com/wiki/Grove_-_Temperature_Sensor
 	 */
 	dval = (1 / (log((BIT(GROVE_RESOLUTION) - 1.0)
-			/ drv_data->raw
+			/ raw
 			- 1.0)
 		     / cfg->b_const
 		     + (1 / 298.15)))
