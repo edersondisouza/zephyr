@@ -1,0 +1,83 @@
+#include <zephyr/dt-bindings/display/panel.h>
+#include <freq.h>
+
+//mctp_serial: &arduino_serial {};
+
+/ {
+
+	/* VCC J3.4 */
+	/* GND J3.14 */
+
+	chosen {
+		zephyr,display = &gc9a01;
+		zephyr,touch = &cst816s;
+	};
+
+	mipi_dbi {
+		compatible = "zephyr,mipi-dbi-spi";
+		status = "okay";
+		spi-dev = <&flexcomm1_lpspi1>;
+		dc-gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>; /* J4.6 */
+		reset-gpios = <&gpio0 22 GPIO_ACTIVE_LOW>; /* J4.8 */
+		#address-cells = <1>;
+		#size-cells = <0>;
+		write-only;
+
+		gc9a01: gc9a01@0 {
+			/* SCK J2.12 */
+			/* MOSI J2.8 */
+			/* MISO not used (J2.10) */
+			/* CS J2.6 Buggy, connect to GND instead (J2.14) */
+			compatible = "galaxycore,gc9x01x";
+			reg = <0>;
+			mipi-max-frequency = <DT_FREQ_M(2) >;
+			pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+			width = <240>;
+			height = <240>;
+			display-inversion;
+		};
+	};
+
+	lvgl_pointer {
+		compatible = "zephyr,lvgl-pointer-input";
+		status = "okay";
+		input = <&cst816s>;
+	};
+
+	lcd_backlight {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		led: led {
+			gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>; /* J1.16 */
+		};
+	};
+
+	mctp_i2c: mctp_i2c {
+		/* SDA J8.4 */
+		/* SCL J8.3 */
+		compatible = "zephyr,mctp-i2c-gpio-target";
+		i2c = <&flexcomm2_lpi2c2>;
+		i2c-addr = <70>;
+		endpoint-id = <12>;
+		/* GPIO J8.8 */
+		endpoint-gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&flexcomm1_lpspi1 {
+	status = "okay";
+};
+
+&flexcomm3_lpi2c3 {
+	status = "okay";
+	/* SDA J5.6 */
+	/* SCL J5.5 */
+	cst816s: cst816s@15 {
+		compatible = "hynitron,cst816s";
+		status = "okay";
+		reg = <0x15>;
+		irq-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>; /* J4.10 */
+		rst-gpios = <&gpio0 23 GPIO_ACTIVE_LOW>; /* J4.12 */
+	};
+};

@@ -203,7 +203,7 @@ int mctp_i2c_gpio_controller_tx(struct mctp_binding *binding, struct mctp_pktbuf
 	}
 
 	if (rc != 0) {
-		LOG_WRN("failed sending mctp message %p", (void *)pkt);
+		LOG_WRN("failed sending mctp message %p %d", (void *)pkt, rc);
 	}
 
 	k_sem_give(b->tx_lock);

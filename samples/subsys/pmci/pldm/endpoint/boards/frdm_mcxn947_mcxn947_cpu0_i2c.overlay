@@ -1,0 +1,40 @@
+&gpio5 {
+	status = "okay";
+};
+
+&flexcomm2 {
+	status = "okay";
+};
+
+&flexcomm2_lpi2c2 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+};
+
+&i3c1 {
+	status = "okay";
+
+	i2c-scl-hz = <DT_FREQ_K(400)>;
+	i3c-scl-hz = <DT_FREQ_M(4)>;
+	i3c-od-scl-hz = <DT_FREQ_K(1500)>;
+
+	p3t1755: p3t1755@4800000236152a0090 {
+		compatible = "nxp,p3t1755";
+		reg = <0x48 0x0236 0x152a0090>;
+		status = "okay";
+	};
+};
+
+/ {
+	aliases {
+		ambient-temp0 = &p3t1755;
+	};
+
+	mctp_i2c: mctp_i2c {
+		compatible = "zephyr,mctp-i2c-gpio-target";
+		i2c = <&flexcomm2_lpi2c2>;
+		i2c-addr = <71>;
+		endpoint-id = <13>;
+		endpoint-gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+	};
+};
