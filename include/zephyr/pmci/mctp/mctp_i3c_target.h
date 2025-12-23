@@ -28,6 +28,7 @@ struct mctp_binding_i3c_target {
 	bool tx_sent;
 	struct k_sem *tx_lock;
 	struct k_sem *tx_complete;
+	struct mctp_pktbuf *rx_pkt;
 	/** @endcond INTERNAL_HIDDEN */
 };
 

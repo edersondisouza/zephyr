@@ -52,7 +52,7 @@ static inline void mctp_i3c_recv_msg(struct mctp_binding_i3c_controller *binding
 }
 
 
-void mctp_i3c_ibi_cb(struct i3c_device_desc *target,
+int mctp_i3c_ibi_cb(struct i3c_device_desc *target,
                      struct i3c_ibi_payload *payload)
 {
 	struct mctp_binding_i3c_controller *binding = mctp_i3c_endpoint_binding(target->dev);
@@ -67,7 +67,7 @@ void mctp_i3c_ibi_cb(struct i3c_device_desc *target,
 
 	if (endpoint_idx == -1) {
 		LOG_ERR("IBI from unknown I3C Device, maybe missing in devicetree? %p", target->dev);
-		return;
+		return -ENODEV;
 	}
 
 	if (payload->payload_len >= 1 && payload->payload[0] == MCTP_I3C_MDB_PENDING_READ) {
@@ -76,6 +76,8 @@ void mctp_i3c_ibi_cb(struct i3c_device_desc *target,
 		LOG_WRN("Expected a IBI payload with the mandatory pending read byte, something "
 			"broke");
 	}
+
+	return 0;
 }
 
 int mctp_i3c_controller_tx(struct mctp_binding *binding, struct mctp_pktbuf *pkt)
@@ -139,6 +141,7 @@ int mctp_i3c_controller_start(struct mctp_binding *binding)
 			        (uint64_t)b->endpoint_i3c_devs[i]->pid);
 			continue;
 		}
+		b->endpoint_i3c_devs[i]->ibi_cb = mctp_i3c_ibi_cb;
 	}
 
 	mctp_binding_set_tx_enabled(binding, true);

@@ -35,6 +35,7 @@ int main(void)
 
 	LOG_INF("MCTP Host EID:%d on %s\n", LOCAL_EID, CONFIG_BOARD_TARGET);
 
+	mctp_set_alloc_ops(malloc, free, realloc);
 	mctp_ctx = mctp_init();
 	__ASSERT_NO_MSG(mctp_ctx != NULL);
 	mctp_register_bus(mctp_ctx, &mctp_i3c_ctrl.binding, LOCAL_EID);
@@ -56,6 +57,8 @@ int main(void)
 
 			k_msleep(500);
 		}
+
+		break;
 	}
 
 	return 0;

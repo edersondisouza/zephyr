@@ -20,20 +20,20 @@ void mctp_i3c_target_buf_write(struct i3c_target_config *config, uint8_t *val, u
 		CONTAINER_OF(config, struct mctp_binding_i3c_target, i3c_target_cfg);
 
 
-	struct mctp_pktbuf *pktbuf = mctp_pktbuf_alloc(&b->binding, len);
+	b->rx_pkt = mctp_pktbuf_alloc(&b->binding, len);
 
-	if (pktbuf == NULL) {
+	if (b->rx_pkt == NULL) {
 		LOG_WRN("Could not allocate pktbuf of len %d to receive I3C message", len);
 		return;
 	}
 
-	pktbuf->start = 0;
-	pktbuf->end = len;
-	memcpy(pktbuf->data, val, len);
-	mctp_bus_rx(&b->binding, pktbuf);
+//	pktbuf->start = 0;
+//	pktbuf->end = len;
+	memcpy(b->rx_pkt->data, val, len);
 
 
-	LOG_DBG("Buf write");
+	LOG_DBG("Buf write %d bytes", len);
+	LOG_HEXDUMP_DBG(val, len, "Data");
 }
 
 int mctp_i3c_target_buf_read(struct i3c_target_config *config, uint8_t **val, uint32_t *len, uint8_t *hdr_mode)
@@ -58,11 +58,15 @@ int mctp_i3c_target_stop(struct i3c_target_config *config)
 	struct mctp_binding_i3c_target *b =
 		CONTAINER_OF(config, struct mctp_binding_i3c_target, i3c_target_cfg);
 
-
 	LOG_DBG("Stop");
 	if (b->tx_pkt != NULL && b->tx_sent) {
 		LOG_DBG("msg sent");
 		k_sem_give(b->tx_complete);
+	}
+
+	if (b->rx_pkt != NULL) {
+		mctp_bus_rx(&b->binding, b->rx_pkt);
+		b->rx_pkt = NULL;
 	}
 
 	return 0;
@@ -111,7 +115,7 @@ int mctp_i3c_target_start(struct mctp_binding *binding)
 		CONTAINER_OF(binding, struct mctp_binding_i3c_target, binding);
 	int rc;
 
-	/* Register i2c target */
+	/* Register i3c target */
 	rc = i3c_target_register(b->i3c, &b->i3c_target_cfg);
 	if (rc != 0) {
 		LOG_ERR("failed to register i2c target");

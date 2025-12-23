@@ -29,6 +29,6 @@
 	mctp_i3c: mctp_i3c {
 		compatible = "zephyr,mctp-i3c-controller";
 		endpoints = <&mctp_endpoint0>;
-		endpoint-ids = [70];
+		endpoint-ids = <11>;
 	};
 };

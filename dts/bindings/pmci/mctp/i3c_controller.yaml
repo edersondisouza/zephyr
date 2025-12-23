@@ -13,6 +13,6 @@ properties:
       I3C devices to use as endpoints
 
   endpoint-ids:
-    type: uint8-array
+    type: array
     description: |
       Endpoint IDs to assign to each I3C device endpoint
