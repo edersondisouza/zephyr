@@ -27,7 +27,7 @@
 #include <fsl_i3c.h>
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(i3c_mcux, CONFIG_I3C_MCUX_LOG_LEVEL);
+LOG_MODULE_REGISTER(i3c_mcux, CONFIG_I3C_LOG_LEVEL);
 
 #define I3C_MCTRL_REQUEST_NONE			I3C_MCTRL_REQUEST(0)
 #define I3C_MCTRL_REQUEST_EMIT_START_ADDR	I3C_MCTRL_REQUEST(1)
@@ -854,7 +854,7 @@ static int mcux_i3c_recover_bus(const struct device *dev)
  * @return Number of bytes read, or negative if error.
  */
 static int mcux_i3c_do_one_xfer_read(I3C_Type *base, struct mcux_i3c_data *data,
-				     uint8_t *buf, uint8_t buf_sz, bool ibi)
+				     uint8_t *buf, size_t buf_sz, bool ibi)
 {
 	int ret = 0;
 	int offset = 0;
@@ -866,7 +866,15 @@ static int mcux_i3c_do_one_xfer_read(I3C_Type *base, struct mcux_i3c_data *data,
 		 */
 		while (offset < buf_sz) {
 			if (mcux_i3c_fifo_rx_count_get(base) == 0) {
-				/* Enable Receive pending interrupt */
+				/* No more data - check if target marked message as complete */
+				if (mcux_i3c_status_is_set(base, I3C_MSTATUS_COMPLETE_MASK)) {
+					/* All data received, move on */
+					LOG_DBG("Target data complete, offset %d buf_sz %d", offset, buf_sz);
+					ret = offset;
+					break;
+				}
+
+				/* More data to come, enable Receive pending interrupt */
 				base->MINTSET = I3C_MSTATUS_RXPEND_MASK;
 
 				/* Wait for data to arrive or an error */
@@ -881,28 +889,25 @@ static int mcux_i3c_do_one_xfer_read(I3C_Type *base, struct mcux_i3c_data *data,
 				buf[offset++] = (uint8_t)base->MRDATAB;
 			}
 		}
-		/*
-		 * If timed out, we abort the transaction.
-		 */
-		if ((mcux_i3c_has_error(data) & I3C_MERRWARN_TIMEOUT_MASK) || ret) {
-			ret = -ETIMEDOUT;
 
-			/* for ibi, ignore timeout err if any bytes were
-			 * read, since the code doesn't know how many
-			 * bytes will be sent by device.
-			 */
-			if (ibi && offset) {
-				ret = offset;
-			} else {
-				LOG_ERR("Timeout error");
-			}
+		/* Done reading all data */
+		if (ret > 0) {
 			break;
 		}
 
+		/*
+		 * If timed out, we abort the transaction.
+		 */
+		if ((mcux_i3c_has_error(data) & I3C_MERRWARN_TIMEOUT_MASK) || ret < 0) {
+			ret = -ETIMEDOUT;
+
+			LOG_ERR("Timeout error");
+			break;
+		}
 	}
 
 	/* If no errors, then return the number of bytes read */
-	if (ret > 0) {
+	if (ret >= 0) {
 		ret = offset;
 	}
 
@@ -938,6 +943,7 @@ static int mcux_i3c_do_one_xfer_write(I3C_Type *base, struct mcux_i3c_data *data
 			/* Wait for the transfer to complete */
 			ret = k_sem_take(&data->device_sync_sem, I3C_TRANSFER_TIMEOUT_MSEC);
 			if (ret) {
+				LOG_ERR("Timeout waiting for TX space %u", offset);
 				break;
 			}
 		}
@@ -1004,8 +1010,12 @@ static int mcux_i3c_do_one_xfer(I3C_Type *base, struct mcux_i3c_data *data,
 
 	if (is_read) {
 		ret = mcux_i3c_do_one_xfer_read(base, data, buf, buf_sz, false);
+		LOG_DBG("%s: read addr 0x%02x, buf_sz %u, ret %d",
+			__func__, addr, buf_sz, ret);
 	} else {
 		ret = mcux_i3c_do_one_xfer_write(base, data, buf, buf_sz, no_ending);
+		LOG_DBG("%s: write addr 0x%02x, buf_sz %u, ret %d",
+			__func__, addr, buf_sz, ret);
 	}
 
 	if (ret < 0) {
@@ -1018,10 +1028,13 @@ static int mcux_i3c_do_one_xfer(I3C_Type *base, struct mcux_i3c_data *data,
 		 * Wait for controller to say the operation is done.
 		 * Save time by not clearing the bit.
 		 */
-		ret = mcux_i3c_status_wait_timeout(base, I3C_MSTATUS_COMPLETE_MASK, 1000);
-		if (ret != 0) {
+		int ret2 = mcux_i3c_status_wait_timeout(base, I3C_MSTATUS_COMPLETE_MASK, 1000);
+		if (ret2 != 0) {
 			LOG_DBG("%s: timed out addr 0x%02x, buf_sz %u",
 				__func__, addr, buf_sz);
+			LOG_DBG("Read so far: %u", mcux_i3c_fifo_rx_count_get(base));
+			LOG_DBG("MSTATUS: 0x%08x", base->MSTATUS);
+
 			emit_stop = true;
 
 			goto out_one_xfer;
@@ -1135,6 +1148,7 @@ static int mcux_i3c_transfer(const struct device *dev,
 		ret = mcux_i3c_do_one_xfer(base, dev_data, target->dynamic_addr, false,
 					   msgs[i].buf, msgs[i].len,
 					   is_read, emit_start, emit_stop, no_ending);
+		LOG_DBG("do one xfer ret: %d", ret);
 		if (ret < 0) {
 			goto out_xfer_i3c_stop_unlock;
 		}
@@ -1518,6 +1532,7 @@ static void mcux_i3c_ibi_work(struct k_work *work)
 
 				goto out_ibi_work;
 			}
+
 		} else {
 			LOG_ERR("IBI from unknown device addr 0x%x", ibiaddr);
 			/* NACK IBI coming from unknown device */
@@ -1831,6 +1846,12 @@ static void mcux_i3c_isr(const struct device *dev)
 		k_sem_give(&dev_data->device_sync_sem);
 	} else {
 		/* Nothing to do right now */
+	}
+
+	if (interrupt_enable & I3C_MSTATUS_COMPLETE_MASK) {
+		/* Disable transfer complete interrupt */
+		base->MINTCLR = I3C_MSTATUS_COMPLETE_MASK;
+		k_sem_give(&dev_data->device_sync_sem);
 	}
 
 	if (interrupt_enable & I3C_MSTATUS_ERRWARN_MASK) {

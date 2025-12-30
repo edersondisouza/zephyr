@@ -16,7 +16,6 @@
 LOG_MODULE_REGISTER(mctp_i3c_controller, CONFIG_MCTP_LOG_LEVEL);
 
 
-
 static inline void mctp_i3c_recv_msg(struct mctp_binding_i3c_controller *binding, size_t endpoint_idx)
 {
 	uint8_t rx_buf[256];
@@ -34,9 +33,12 @@ static inline void mctp_i3c_recv_msg(struct mctp_binding_i3c_controller *binding
 	int rc = i3c_transfer(binding->endpoint_i3c_devs[endpoint_idx], &msg, 1);
 
 	if (rc != 0) {
-		LOG_ERR("Error requesting read from endpoint %d", endpoint_idx);
+		LOG_ERR("Error requesting read from endpoint %d - %d", endpoint_idx, rc);
+		LOG_HEXDUMP_DBG(msg.buf, sizeof(rx_buf), "Data: ");
 		return;
 	}
+	LOG_DBG("Read %d bytes from endpoint %d", msg.num_xfer, endpoint_idx);
+	LOG_HEXDUMP_DBG(msg.buf, msg.num_xfer, "Data: ");
 
 	struct mctp_pktbuf *pkt = mctp_pktbuf_alloc(&binding->binding, msg.num_xfer);
 
@@ -58,6 +60,11 @@ int mctp_i3c_ibi_cb(struct i3c_device_desc *target,
 	struct mctp_binding_i3c_controller *binding = mctp_i3c_endpoint_binding(target->dev);
 	int endpoint_idx = -1;
 
+	LOG_DBG("IBI received from target %p PID %llx BCR %x",
+		target,
+		(uint64_t)target->pid,
+		target->bcr);
+
 	for (int i = 0; i < binding->num_endpoints; i++) {
 		if (binding->devices[i] == target->dev) {
 			endpoint_idx = i;
@@ -71,6 +78,9 @@ int mctp_i3c_ibi_cb(struct i3c_device_desc *target,
 	}
 
 	if (payload->payload_len >= 1 && payload->payload[0] == MCTP_I3C_MDB_PENDING_READ) {
+		LOG_DBG("Pending read IBI received from endpoint %d len: %u [0x%x]", endpoint_idx,
+			payload->payload_len,
+			payload->payload[0]);
 		mctp_i3c_recv_msg(binding, endpoint_idx);
 	} else {
 		LOG_WRN("Expected a IBI payload with the mandatory pending read byte, something "

@@ -24,8 +24,8 @@ MCTP_I3C_CONTROLLER_DT_DEFINE(mctp_i3c_ctrl, DT_NODELABEL(mctp_i3c));
 static void rx_message(uint8_t eid, bool tag_owner, uint8_t msg_tag, void *data, void *msg,
 		       size_t len)
 {
-	LOG_INF("received message %s from endpoint %d to %d, msg_tag %d, len %zu", (char *)msg, eid,
-		LOCAL_EID, msg_tag, len);
+	LOG_INF("Received message \"%s\" from endpoint %d to %d, msg_tag %d, len %zu", (char *)msg,
+		eid, LOCAL_EID, msg_tag, len);
 }
 
 int main(void)
@@ -41,11 +41,12 @@ int main(void)
 	mctp_register_bus(mctp_ctx, &mctp_i3c_ctrl.binding, LOCAL_EID);
 	mctp_set_rx_all(mctp_ctx, rx_message, NULL);
 
+	int j = 2;
 	while (true) {
 		for (int i = 0; i < mctp_i3c_ctrl.num_endpoints; i++) {
-
-			LOG_INF("sending message \"ping\" to endpoint %u",
+			LOG_INF("Sending message \"ping\" to endpoint %u",
 				mctp_i3c_ctrl.endpoint_ids[i]);
+
 			rc = mctp_message_tx(mctp_ctx, mctp_i3c_ctrl.endpoint_ids[i], false,
 					0, "ping", sizeof("ping"));
 			if (rc != 0) {
@@ -54,12 +55,15 @@ int main(void)
 					mctp_i3c_ctrl.endpoint_ids[i],
 					rc);
 			}
-
-			k_msleep(500);
+			k_msleep(1000);
 		}
-
-		break;
+//		if (--j == 0)
+//			break;
 	}
+
+//	while (1) {
+//		k_msleep(1000);
+//	}
 
 	return 0;
 }

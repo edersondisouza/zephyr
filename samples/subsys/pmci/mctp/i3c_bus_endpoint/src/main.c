@@ -30,7 +30,7 @@ static void rx_message(uint8_t eid, bool tag_owner, uint8_t msg_tag, void *data,
 	LOG_INF("received message \"%s\" from endpoint %d, replying with \"pong\"", (char *)msg,
 		eid);
 
-//	mctp_message_tx(mctp_ctx, BUS_OWNER_ID, false, 0, "pong", sizeof("pong"));
+	mctp_message_tx(mctp_ctx, BUS_OWNER_ID, false, 0, "pong", sizeof("pong"));
 
 	k_sem_give(&mctp_rx);
 }
@@ -38,6 +38,8 @@ static void rx_message(uint8_t eid, bool tag_owner, uint8_t msg_tag, void *data,
 int main(void)
 {
 	LOG_INF("MCTP Host EID:%d on %s\n", mctp_i3c_ctrl.endpoint_id, CONFIG_BOARD_TARGET);
+
+	uint32_t count = 0;
 
 	mctp_set_alloc_ops(malloc, free, realloc);
 	mctp_ctx = mctp_init();
@@ -50,7 +52,6 @@ int main(void)
 	 */
 	while (true) {
 		k_sem_take(&mctp_rx, K_FOREVER);
-		mctp_message_tx(mctp_ctx, BUS_OWNER_ID, false, 0, "pong", sizeof("pong"));
 	}
 
 	return 0;

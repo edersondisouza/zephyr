@@ -19,7 +19,6 @@ void mctp_i3c_target_buf_write(struct i3c_target_config *config, uint8_t *val, u
 	struct mctp_binding_i3c_target *b =
 		CONTAINER_OF(config, struct mctp_binding_i3c_target, i3c_target_cfg);
 
-
 	b->rx_pkt = mctp_pktbuf_alloc(&b->binding, len);
 
 	if (b->rx_pkt == NULL) {
@@ -27,8 +26,6 @@ void mctp_i3c_target_buf_write(struct i3c_target_config *config, uint8_t *val, u
 		return;
 	}
 
-//	pktbuf->start = 0;
-//	pktbuf->end = len;
 	memcpy(b->rx_pkt->data, val, len);
 
 
@@ -78,7 +75,6 @@ const struct i3c_target_callbacks mctp_i3c_target_callbacks = {
 	.stop_cb = mctp_i3c_target_stop,
 };
 
-
 /*
  * libmctp wants us to return once the packet is sent not before
  * so the entire process of flagging the tx with gpio, waiting on the read,
@@ -90,10 +86,20 @@ int mctp_i3c_target_tx(struct mctp_binding *binding, struct mctp_pktbuf *pkt)
 {
 	struct mctp_binding_i3c_target *b =
 		CONTAINER_OF(binding, struct mctp_binding_i3c_target, binding);
+	int r;
+	LOG_DBG("TX pkt len %d", pkt->end - pkt->start);
 	k_sem_take(b->tx_lock, K_FOREVER);
+	LOG_DBG("TX pkt locked");
 
 	b->tx_pkt = pkt;
 	b->tx_sent = false;
+
+	/* Need to have data at TX fifo before rising IBI */
+	// TODO this may not be the case for all I3C controllers,
+	// need to check
+	r = i3c_target_tx_write(b->i3c, pkt->data + pkt->start,
+				     pkt->end - pkt->start, 0);
+	LOG_DBG("i3c_target_tx_write returned %d", r);
 
 	uint8_t payload = MCTP_I3C_MDB_PENDING_READ;
 
@@ -103,8 +109,9 @@ int mctp_i3c_target_tx(struct mctp_binding *binding, struct mctp_pktbuf *pkt)
 		.payload_len = 1,
 	};
 
-	i3c_ibi_raise(b->i3c, &ibi_req);
-	k_sem_take(b->tx_complete, K_FOREVER);
+	r = i3c_ibi_raise(b->i3c, &ibi_req);
+	LOG_DBG("IBI raised %d", r);
+//	k_sem_take(b->tx_complete, K_FOREVER);
 	k_sem_give(b->tx_lock);
 	return 0;
 }

@@ -390,6 +390,7 @@ static inline void npcx_i3c_status_clear_all(struct i3c_reg *inst)
 
 static inline void npcx_i3c_errwarn_clear_all(struct i3c_reg *inst)
 {
+	LOG_DBG("Clear MERRWARN 0x%08x", inst->MERRWARN);
 	inst->MERRWARN = inst->MERRWARN;
 }
 
@@ -511,7 +512,7 @@ static int npcx_i3c_request_emit_start(struct i3c_reg *inst, uint8_t addr,
 
 	/* Check NACK after MCTRLDONE is get */
 	if (IS_BIT_SET(inst->MERRWARN, NPCX_I3C_MERRWARN_NACK)) {
-		LOG_DBG("Address nacked");
+		LOG_DBG("Address 0x%x nacked", addr);
 		return -ENODEV;
 	}
 
@@ -758,6 +759,7 @@ static int npcx_i3c_xfer_write_fifo(struct i3c_reg *inst, uint8_t *buf, uint8_t 
 	int offset = 0;
 	int remaining = buf_sz;
 
+	LOG_DBG("Write tx fifo sz=%d, no_ending=%d", buf_sz, no_ending);
 	while (remaining > 0) {
 		/* Check tx fifo not full */
 		if (WAIT_FOR(!IS_BIT_SET(inst->MDATACTRL, NPCX_I3C_MDATACTRL_TXFULL),
@@ -924,10 +926,26 @@ static int npcx_i3c_xfer_read_fifo_dma(const struct device *dev, uint8_t *buf, u
 	mdma_inst->MDMA_CTL0 |= BIT(NPCX_MDMA_CTL_SIEN);   /* Enable stop interrupt */
 	mdma_inst->MDMA_CTL0 |= BIT(NPCX_MDMA_CTL_MDMAEN); /* Start DMA transfer */
 
+	size_t rx_count = GET_FIELD(i3c_inst->MDATACTRL, NPCX_I3C_MDATACTRL_RXCOUNT);
+	LOG_WRN("Initial RXCOUNT=%d", rx_count);
 	/* Wait MDMA TC */
 	ret = i3c_ctrl_wait_completion(dev);
 	if (ret < 0) {
-		LOG_DBG("Check DMA done time out");
+		LOG_WRN("Check DMA done time out %d Count: %d [%u %u]", ret, buf_sz - mdma_inst->MDMA_CTCNT0, buf_sz, mdma_inst->MDMA_CTCNT0);
+
+		/* DMA didn't complete, but it only signals so if all bytes were read.
+		 * Thus, it doesn't work if message size isn't known ahead. Let's check
+		 * if I3C 'COMPLETE' flag is set, and if so, return whatever was read
+		 * so far. This seems like a DMA bug. */
+		if (IS_BIT_SET(i3c_inst->MSTATUS, NPCX_I3C_MSTATUS_COMPLETE)) {
+			ret = buf_sz - mdma_inst->MDMA_CTCNT0; /* Set transferred count */
+			LOG_DBG("Read cnt=%d", ret);
+			/* Clear TIMEOUT on MERRWARN */
+			LOG_WRN("MDMA_CTL0: 0x%08x", mdma_inst->MDMA_CTL0);
+			i3c_inst->MERRWARN = BIT(NPCX_I3C_MERRWARN_TIMEOUT);
+			/* Disable MDMA - Datasheet says not to do so, though... */
+			mdma_inst->MDMA_CTL0 &= ~BIT(NPCX_MDMA_CTL_MDMAEN);
+		}
 	} else {
 		ret = buf_sz - mdma_inst->MDMA_CTCNT0; /* Set transferred count */
 		LOG_DBG("Read cnt=%d", ret);
@@ -1018,6 +1036,7 @@ static int npcx_i3c_do_one_xfer_dma(const struct device *dev, uint8_t addr,
 
 	if (ret < 0) {
 		LOG_ERR("%s: %s fifo fail", __func__, is_read ? "read" : "write");
+		LOG_ERR("ERROR: MSTATUS 0x%08x MERRWARN 0x%08x", inst->MSTATUS, inst->MERRWARN);
 		goto out_do_one_xfer_dma;
 	}
 
@@ -2172,6 +2191,8 @@ static void npcx_i3c_target_enable_mdmatb(const struct device *dev, uint8_t *buf
 	mdma_inst->MDMA_SRCB1 = (uint32_t)buf;             /* Set source address */
 	mdma_inst->MDMA_CTL1 &= ~BIT(NPCX_MDMA_CTL_TC);    /* W0C */
 	mdma_inst->MDMA_CTL1 |= BIT(NPCX_MDMA_CTL_MDMAEN); /* Start DMA transfer */
+
+	LOG_DBG("MDMATB_EN=1 len=%u", len);
 }
 
 static void npcx_i3c_target_rx_read(const struct device *dev)
@@ -2818,6 +2839,8 @@ static void npcx_i3c_target_isr(const struct device *dev)
 				if (target_config != NULL) {
 					config_tgt->dynamic_addr =
 						GET_FIELD(inst->DYNADDR, NPCX_I3C_DYNADDR_DADDR);
+					LOG_DBG("New dynamic address: 0x%02x",
+					       config_tgt->dynamic_addr);
 				}
 			}
 		}
@@ -2873,6 +2896,7 @@ static void npcx_i3c_isr(const struct device *dev)
 
 	/* Controller write end */
 	if (IS_BIT_SET(inst->MSTATUS, NPCX_I3C_MSTATUS_COMPLETE)) {
+		LOG_DBG("ISR MSTATUS COMPLETE !");
 		inst->MSTATUS = BIT(NPCX_I3C_MSTATUS_COMPLETE); /* W1C */
 
 		/* MDMA write */
@@ -2884,6 +2908,7 @@ static void npcx_i3c_isr(const struct device *dev)
 
 	/* Controller read end */
 	if (IS_BIT_SET(mdma_inst->MDMA_CTL0, NPCX_MDMA_CTL_TC)) {
+		LOG_DBG("ISR MDMA TC !");
 		mdma_inst->MDMA_CTL0 &= ~BIT(NPCX_MDMA_CTL_TC); /* W0C */
 
 		/* MDMA read */
