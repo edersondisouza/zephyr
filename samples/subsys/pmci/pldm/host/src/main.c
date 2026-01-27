@@ -246,6 +246,8 @@ int main(void)
 		} else {
 			k_sem_take(&mctp_rx, K_MSEC(1000));
 		}
+
+		break;
 	}
 
 	return 0;
