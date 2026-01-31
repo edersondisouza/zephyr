@@ -37,7 +37,8 @@ K_SEM_DEFINE(mctp_rx, 0, 1);
 const char *MESSAGE_TYPE_TO_STRING[] = {"Response", "Request", "Reserved", "Async Request Notify"};
 
 const char *COMMAND_TO_STRING[] = {"UNDEFINED",      "SetTID",          "GetTID",
-				   "GetPLDMVersion", "GetPLDMCommands", "SelectPLDMVersion"};
+				   "GetPLDMVersion", "GetPLDMTypes", "GetPLDMCommands",
+				   "SelectPLDMVersion"};
 
 static struct mctp *mctp_ctx;
 
@@ -237,7 +238,7 @@ int main(void)
 		encode_get_commands_req(instance, pldm_type, version, msg);
 		instance++;
 
-		LOG_HEXDUMP_INF(mctp_msg, get_version_request_size, "pldm get_commands_request");
+		LOG_HEXDUMP_INF(mctp_msg, get_commands_request_size, "pldm get_commands_request");
 		rc = mctp_message_tx(mctp_ctx, REMOTE_EID, false, 0, mctp_msg,
 				     get_commands_request_size);
 		if (rc != 0) {

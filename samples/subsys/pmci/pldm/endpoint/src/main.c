@@ -35,7 +35,8 @@ LOG_MODULE_REGISTER(pldm_endpoint);
 const char *MESSAGE_TYPE_TO_STRING[] = {"Response", "Request", "Reserved", "Async Request Notify"};
 
 const char *COMMAND_TO_STRING[] = {"UNDEFINED",      "SetTID",          "GetTID",
-				   "GetPLDMVersion", "GetPLDMCommands", "SelectPLDMVersion"};
+				   "GetPLDMVersion", "GetPLDMTypes", "GetPLDMCommands",
+				   "SelectPLDMVersion"};
 
 static struct mctp *mctp_ctx;
 
@@ -99,8 +100,7 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *ms
 
 		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
 				     sizeof(resp_msg_buf));
-		__ASSERT(rc == 0, "Sending response to GetTypes should succeed");	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS && hdr_info.msg_type == PLDM_REQUEST) {
-		
+		__ASSERT(rc == 0, "Sending response to GetTypes should succeed");
 	} else if (hdr_info.command == PLDM_GET_PLDM_VERSION && hdr_info.msg_type == PLDM_REQUEST) {
 		uint32_t transfer_handle;
 		uint8_t transfer_opflag;
@@ -125,7 +125,7 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *ms
 
 		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
 				     sizeof(resp_msg_buf));
-		__ASSERT(rc == 0, "Sending response to GetVersion should succeed");	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS && hdr_info.msg_type == PLDM_REQUEST) {
+		__ASSERT(rc == 0, "Sending response to GetVersion should succeed");
 	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS && hdr_info.msg_type == PLDM_REQUEST) {
 		uint8_t type;
 		ver32_t vers;
@@ -145,7 +145,9 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *ms
 
 		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
 				     sizeof(resp_msg_buf));
-		__ASSERT(rc == 0, "Sending response to GetCommands should succeed");	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS && hdr_info.msg_type == PLDM_REQUEST) {
+		__ASSERT(rc == 0, "Sending response to GetCommands should succeed");
+	} else if (hdr_info.command == PLDM_SELECT_PLDM_VERSION && hdr_info.msg_type == PLDM_REQUEST) {
+		LOG_WRN("Not implemented: GetPLDMCommands");
 	} else {
 		LOG_WRN("Unhandled pldm message, command %d, type %d", hdr_info.command, hdr_info.msg_type);
 	}
