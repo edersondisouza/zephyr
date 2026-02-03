@@ -69,6 +69,73 @@ static ver32_t version;
 /* Discovery if and what a MCTP endpoint can do */
 /* TODO pldm_discovery(struct mctp *mctp_ctx, uint8_t eid, struct pldm_tid_info *tid_info); */
 
+static void print_supported_commands(bitfield8_t *commands)
+{
+	LOG_INF("Supported PLDM Commands:");
+	if (IS_BIT_SET(commands[0].byte, PLDM_SET_TID)) {
+		LOG_INF(" - PLDM_SET_TID");
+	}
+	if (IS_BIT_SET(commands[0].byte, PLDM_GET_TID)) {
+		LOG_INF(" - PLDM_GET_TID");
+	}
+	if (IS_BIT_SET(commands[0].byte, PLDM_GET_PLDM_VERSION)) {
+		LOG_INF(" - PLDM_GET_PLDM_VERSION");
+	}
+	if (IS_BIT_SET(commands[0].byte, PLDM_GET_PLDM_TYPES)) {
+		LOG_INF(" - PLDM_GET_PLDM_TYPES");
+	}
+	if (IS_BIT_SET(commands[0].byte, PLDM_GET_PLDM_COMMANDS)) {
+		LOG_INF(" - PLDM_GET_PLDM_COMMANDS");
+	}
+	if (IS_BIT_SET(commands[0].byte, PLDM_SELECT_PLDM_VERSION)) {
+		LOG_INF(" - PLDM_SELECT_PLDM_VERSION");
+	}
+	if (IS_BIT_SET(commands[0].byte, PLDM_NEGOTIATE_TRANSFER_PARAMETERS)) {
+		LOG_INF(" - PLDM_NEGOTIATE_TRANSFER_PARAMETERS");
+	}
+	if (IS_BIT_SET(commands[1].byte, PLDM_MULTIPART_SEND - 8)) {
+		LOG_INF(" - PLDM_MULTIPART_SEND");
+	}
+	if (IS_BIT_SET(commands[1].byte, PLDM_MULTIPART_RECEIVE - 8)) {
+		LOG_INF(" - PLDM_MULTIPART_RECEIVE");
+	}
+	if (IS_BIT_SET(commands[1].byte, PLDM_GET_MULTIPART_TRANSFER_SUPPORT - 8)) {
+		LOG_INF(" - PLDM_GET_MULTIPART_TRANSFER_SUPPORT");
+	}
+}
+
+static void print_supported_types(bitfield8_t *types)
+{
+	LOG_INF("Supported PLDM Types:");
+	if (IS_BIT_SET(types[0].byte, PLDM_BASE)) {
+		LOG_INF(" - PLDM_BASE");
+	}
+	if (IS_BIT_SET(types[0].byte, PLDM_SMBIOS)) {
+		LOG_INF(" - PLDM_SMBIOS");
+	}
+	if (IS_BIT_SET(types[0].byte, PLDM_PLATFORM)) {
+		LOG_INF(" - PLDM_PLATFORM");
+	}
+	if (IS_BIT_SET(types[0].byte, PLDM_BIOS)) {
+		LOG_INF(" - PLDM_BIOS");
+	}
+	if (IS_BIT_SET(types[0].byte, PLDM_FRU)) {
+		LOG_INF(" - PLDM_FRU");
+	}
+	if (IS_BIT_SET(types[0].byte, PLDM_FWUP)) {
+		LOG_INF(" - PLDM_FWUP");
+	}
+	if (IS_BIT_SET(types[0].byte, PLDM_RDE)) {
+		LOG_INF(" - PLDM_RDE");
+	}
+	if (IS_BIT_SET(types[0].byte, PLDM_FILE)) {
+		LOG_INF(" - PLDM_FILE");
+	}
+	if (IS_BIT_SET(types[7].byte, PLDM_OEM - 56)) {
+		LOG_INF(" - PLDM_OEM");
+	}
+}
+
 static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_len)
 {
 	struct pldm_header_info hdr_info;
@@ -101,11 +168,15 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 		decode_get_types_resp(msg, msg_len - sizeof(struct pldm_msg_hdr), &comp_code,
 				      (bitfield8_t *)types);
 		LOG_INF("get types response, completion code %d", comp_code);
+		LOG_HEXDUMP_INF(types, sizeof(types), "types supported");
+		print_supported_types((bitfield8_t *)types);
 	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS &&
 		   hdr_info.msg_type == PLDM_RESPONSE) {
 		decode_get_commands_resp(msg, msg_len - sizeof(struct pldm_msg_hdr), &comp_code,
-					 (bitfield8_t *)types);
+					 (bitfield8_t *)commands);
 		LOG_INF("get commands response, completion code %d", comp_code);
+		LOG_HEXDUMP_INF(commands, sizeof(commands), "commands supported");
+		print_supported_commands((bitfield8_t *)commands);
 	} else if (hdr_info.command == PLDM_GET_PLDM_VERSION &&
 		   hdr_info.msg_type == PLDM_RESPONSE) {
 		/* ignored, we only accept the first version response... */
@@ -147,10 +218,14 @@ static void rx_message(uint8_t src_eid, bool tag_owner, uint8_t msg_tag, void *d
 		pldm_rx_handler(src_eid, data, &msg_buf[1], len - 1);
 	}
 
+	LOG_WRN("Are we in ISR? %d", k_is_in_isr());
+
 	k_sem_give(&mctp_rx);
 }
 
-MCTP_UART_DT_DEFINE(mctp_host, DEVICE_DT_GET(DT_NODELABEL(arduino_serial)));
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_serial))
+MCTP_UART_DT_DEFINE(mctp_host_serial, DEVICE_DT_GET(DT_NODELABEL(mctp_serial)));
+#endif
 
 int main(void)
 {
@@ -161,9 +236,9 @@ int main(void)
 	mctp_set_alloc_ops(malloc, free, realloc);
 	mctp_ctx = mctp_init();
 	__ASSERT_NO_MSG(mctp_ctx != NULL);
-	mctp_register_bus(mctp_ctx, &mctp_host.binding, LOCAL_EID);
+	mctp_register_bus(mctp_ctx, &mctp_host_serial.binding, LOCAL_EID);
 	mctp_set_rx_all(mctp_ctx, rx_message, NULL);
-	mctp_uart_start_rx(&mctp_host);
+	mctp_uart_start_rx(&mctp_host_serial);
 
 	/* We can set this one time here */
 	mctp_msg[0] = PLDM_MCTP_MESSAGE_TYPE;

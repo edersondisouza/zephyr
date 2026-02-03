@@ -89,12 +89,14 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *ms
 		 * message type byte)
 		 */
 		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_TYPES_RESP_BYTES) + 1];
-		uint8_t types[8];
+		const bitfield8_t types[8] = {
+			{ .byte = BIT(PLDM_BASE) },
+			{ 0 },
+		};
 		
 		resp_msg_buf[0] = PLDM_MCTP_MESSAGE_TYPE;
 
-		types[0] = PLDM_BASE; 
-		rc = encode_get_types_resp(hdr_info.instance, PLDM_SUCCESS, (const bitfield8_t *)types,
+		rc = encode_get_types_resp(hdr_info.instance, PLDM_SUCCESS, types,
 				    (struct pldm_msg *)&resp_msg_buf[1]);
 		__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
 
@@ -135,11 +137,14 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *ms
 		__ASSERT(rc == PLDM_SUCCESS, "Decoding GetCommands request should succeed");
 
 		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_COMMANDS_RESP_BYTES) + 1];
-		uint8_t commands[32];
+		const bitfield8_t commands[32] = {
+			{ .byte = BIT(PLDM_GET_TID) | BIT(PLDM_GET_PLDM_VERSION) |
+				  BIT(PLDM_GET_PLDM_TYPES) | BIT(PLDM_GET_PLDM_COMMANDS) },
+			{ 0 },
+		};
 
 		resp_msg_buf[0] = PLDM_MCTP_MESSAGE_TYPE;
-		commands[0] =  PLDM_GET_TID | PLDM_GET_PLDM_VERSION | PLDM_GET_PLDM_TYPES | PLDM_GET_PLDM_COMMANDS;
-		rc = encode_get_commands_resp(hdr_info.instance, PLDM_SUCCESS, (const bitfield8_t *)commands,
+		rc = encode_get_commands_resp(hdr_info.instance, PLDM_SUCCESS, commands,
 				    (struct pldm_msg *)&resp_msg_buf[1]);
 		__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
 
