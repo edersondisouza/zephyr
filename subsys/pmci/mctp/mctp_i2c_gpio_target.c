@@ -177,6 +177,8 @@ int mctp_i2c_gpio_target_tx(struct mctp_binding *binding, struct mctp_pktbuf *pk
 		CONTAINER_OF(binding, struct mctp_binding_i2c_gpio_target, binding);
 	int rc;
 
+	LOG_DBG("TX pkt size %d", (int)(pkt->end - pkt->start));
+
 	k_sem_take(b->tx_lock, K_FOREVER);
 
 	b->tx_pkt = pkt;
@@ -187,6 +189,8 @@ int mctp_i2c_gpio_target_tx(struct mctp_binding *binding, struct mctp_pktbuf *pk
 		b->tx_pkt = NULL;
 		goto out;
 	}
+
+	LOG_DBG("TX signaled, waiting for read");
 
 	k_sem_take(b->tx_complete, K_FOREVER);
 

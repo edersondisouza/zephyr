@@ -14,6 +14,7 @@
 #include <libpldm/base.h>
 #include <libmctp.h>
 #include <zephyr/pmci/mctp/mctp_uart.h>
+#include <zephyr/pmci/mctp/mctp_i2c_gpio_controller.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(pldm_host);
@@ -26,8 +27,8 @@ LOG_MODULE_REGISTER(pldm_host);
 /* Local PLDM Terminus ID that responds to requests */
 #define LOCAL_TID 1
 
-/* Remote MCTP Endpoint ID that we respond to */
-#define REMOTE_EID 10
+/* Remote serial MCTP Endpoint ID that we respond to */
+#define SERIAL_REMOTE_EID 10
 
 #define MCTP_INTEGRITY_CHECK   0x80
 #define MCTP_MESSAGE_TYPE_MASK 0x7F
@@ -40,7 +41,10 @@ const char *COMMAND_TO_STRING[] = {"UNDEFINED",      "SetTID",          "GetTID"
 				   "GetPLDMVersion", "GetPLDMTypes", "GetPLDMCommands",
 				   "SelectPLDMVersion"};
 
-static struct mctp *mctp_ctx;
+struct mctp_endpoint {
+	uint8_t eid;
+	struct mctp *mctp_ctx;
+};
 
 struct pldm_type_info {
 	ver32_t version;
@@ -225,106 +229,174 @@ static void rx_message(uint8_t src_eid, bool tag_owner, uint8_t msg_tag, void *d
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_serial))
 MCTP_UART_DT_DEFINE(mctp_host_serial, DEVICE_DT_GET(DT_NODELABEL(mctp_serial)));
+
+struct mctp_endpoint init_mctp_uart(struct mctp_binding_uart *uart)
+{
+	struct mctp_endpoint endpoint;
+
+	endpoint.mctp_ctx = mctp_init();
+	if (endpoint.mctp_ctx == NULL) {
+		LOG_ERR("Failed to initialize MCTP context");
+		return endpoint;
+	}
+
+	mctp_register_bus(endpoint.mctp_ctx, &uart->binding, LOCAL_EID);
+	mctp_set_rx_all(endpoint.mctp_ctx, rx_message, NULL);
+	mctp_uart_start_rx(uart);
+
+	endpoint.eid = SERIAL_REMOTE_EID;
+
+	return endpoint;
+}
 #endif
 
-int main(void)
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_i2c))
+MCTP_I2C_GPIO_CONTROLLER_DT_DEFINE(mctp_i2c_gpio_ctrl, DT_NODELABEL(mctp_i2c));
+
+struct mctp_endpoint init_mctp_i2c_gpio(struct mctp_binding_i2c_gpio_controller *i2c_gpio)
 {
+	struct mctp_endpoint endpoint;
+
+	endpoint.mctp_ctx = mctp_init();
+	if (endpoint.mctp_ctx == NULL) {
+		LOG_ERR("Failed to initialize MCTP context");
+		return endpoint;
+	}
+
+	mctp_register_bus(endpoint.mctp_ctx, &i2c_gpio->binding, LOCAL_EID);
+	mctp_set_rx_all(endpoint.mctp_ctx, rx_message, NULL);
+
+	endpoint.eid = i2c_gpio->endpoint_ids[0];
+
+	return endpoint;
+}
+#endif
+
+void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
+{
+	LOG_INF("Starting PLDM discovery on MCTP EID %d", eid);
+	/* TODO implement discovery */
 	int rc;
-
-	LOG_INF("PLDM Host EID:%d on %s\n", LOCAL_EID, CONFIG_BOARD_TARGET);
-
-	mctp_set_alloc_ops(malloc, free, realloc);
-	mctp_ctx = mctp_init();
-	__ASSERT_NO_MSG(mctp_ctx != NULL);
-	mctp_register_bus(mctp_ctx, &mctp_host_serial.binding, LOCAL_EID);
-	mctp_set_rx_all(mctp_ctx, rx_message, NULL);
-	mctp_uart_start_rx(&mctp_host_serial);
-
-	/* We can set this one time here */
-	mctp_msg[0] = PLDM_MCTP_MESSAGE_TYPE;
 
 	/* PLDM message is after the MCTP message type byte */
 	struct pldm_msg *msg = &mctp_msg[1];
 	uint32_t instance = 0;
 
-	/* PLDM poll (discovery) loop, send a sequence of commands and wait on responses */
-	while (true) {
-		k_msleep(1000);
-		rc = 0;
+	/* GetTID request/response */
+	uint8_t get_tid_request_size = PLDM_MSG_SIZE(0) + 1;
 
-		/* GetTID request/response */
-		uint8_t get_tid_request_size = PLDM_MSG_SIZE(0) + 1;
+	encode_get_tid_req(instance, msg);
+	instance++;
 
-		encode_get_tid_req(instance, msg);
-		instance++;
-
-		LOG_HEXDUMP_INF(mctp_msg, get_tid_request_size, "pldm get_tid_request");
-		rc = mctp_message_tx(mctp_ctx, REMOTE_EID, false, 0, mctp_msg,
-				     get_tid_request_size);
-		if (rc != 0) {
-			LOG_WRN("Failed to send message, errno %d\n", rc);
-			continue;
-		} else {
-			k_sem_take(&mctp_rx, K_MSEC(1000));
+	LOG_HEXDUMP_INF(mctp_msg, get_tid_request_size, "pldm get_tid_request");
+	rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+			     get_tid_request_size);
+	if (rc != 0) {
+		LOG_WRN("Failed to send message, errno %d\n", rc);
+		return;
+	} else {
+		rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+		if (rc == -EAGAIN) {
+			LOG_WRN("Timeout waiting for get tid response");
+			return;
 		}
-		uint8_t get_types_request_size = PLDM_MSG_SIZE(0) + 1;
-
-		/* GetPLDMTypes request/response */
-		encode_get_types_req(instance, msg);
-		instance++;
-
-		LOG_HEXDUMP_INF(mctp_msg, get_types_request_size, "pldm get_types_request");
-		rc = mctp_message_tx(mctp_ctx, REMOTE_EID, false, 0, mctp_msg,
-				     get_types_request_size);
-		if (rc != 0) {
-			LOG_WRN("Failed to send message, errno %d\n", rc);
-			continue;
-		} else {
-			k_sem_take(&mctp_rx, K_MSEC(1000));
-		}
-
-		/* TODO in the discovery case we'd iterate types to gather information on versions
-		 * and available commands for each version (or a selected version)
-		 */
-
-		uint8_t pldm_type = PLDM_BASE;
-
-		/* GetPLDMVersion request/response */
-		uint32_t transfer_handle = 0;
-		uint8_t transfer_opflag = PLDM_GET_FIRSTPART;
-		uint8_t get_version_request_size = PLDM_MSG_SIZE(PLDM_GET_VERSION_REQ_BYTES) + 1;
-
-		encode_get_version_req(instance, transfer_handle, transfer_opflag, pldm_type, msg);
-		instance++;
-
-		LOG_HEXDUMP_INF(mctp_msg, get_version_request_size, "pldm get_version_request");
-		rc = mctp_message_tx(mctp_ctx, REMOTE_EID, false, 0, mctp_msg,
-				     get_version_request_size);
-		if (rc != 0) {
-			LOG_WRN("Failed to send message, errno %d\n", rc);
-			continue;
-		} else {
-			k_sem_take(&mctp_rx, K_MSEC(1000));
-		}
-
-		/* GetPLDMCommands request/response */
-		uint8_t get_commands_request_size = PLDM_MSG_SIZE(PLDM_GET_COMMANDS_REQ_BYTES) + 1;
-
-		encode_get_commands_req(instance, pldm_type, version, msg);
-		instance++;
-
-		LOG_HEXDUMP_INF(mctp_msg, get_commands_request_size, "pldm get_commands_request");
-		rc = mctp_message_tx(mctp_ctx, REMOTE_EID, false, 0, mctp_msg,
-				     get_commands_request_size);
-		if (rc != 0) {
-			LOG_WRN("Failed to send message, errno %d\n", rc);
-			continue;
-		} else {
-			k_sem_take(&mctp_rx, K_MSEC(1000));
-		}
-
-		break;
 	}
+	uint8_t get_types_request_size = PLDM_MSG_SIZE(0) + 1;
+
+	/* GetPLDMTypes request/response */
+	encode_get_types_req(instance, msg);
+	instance++;
+
+	LOG_HEXDUMP_INF(mctp_msg, get_types_request_size, "pldm get_types_request");
+	rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+			     get_types_request_size);
+	if (rc != 0) {
+		LOG_WRN("Failed to send message, errno %d\n", rc);
+		return;
+	} else {
+		rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+		if (rc == -EAGAIN) {
+			LOG_WRN("Timeout waiting for get types response");
+			return;
+		}
+	}
+
+	/* TODO in the discovery case we'd iterate types to gather information on versions
+	 * and available commands for each version (or a selected version)
+	 */
+
+	uint8_t pldm_type = PLDM_BASE;
+
+	/* GetPLDMVersion request/response */
+	uint32_t transfer_handle = 0;
+	uint8_t transfer_opflag = PLDM_GET_FIRSTPART;
+	uint8_t get_version_request_size = PLDM_MSG_SIZE(PLDM_GET_VERSION_REQ_BYTES) + 1;
+
+	encode_get_version_req(instance, transfer_handle, transfer_opflag, pldm_type, msg);
+	instance++;
+
+	LOG_HEXDUMP_INF(mctp_msg, get_version_request_size, "pldm get_version_request");
+	rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+			     get_version_request_size);
+	if (rc != 0) {
+		LOG_WRN("Failed to send message, errno %d\n", rc);
+		return;
+	} else {
+		rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+		if (rc == -EAGAIN) {
+			LOG_WRN("Timeout waiting for get version response");
+			return;
+		}
+	}
+
+	/* GetPLDMCommands request/response */
+	uint8_t get_commands_request_size = PLDM_MSG_SIZE(PLDM_GET_COMMANDS_REQ_BYTES) + 1;
+
+	encode_get_commands_req(instance, pldm_type, version, msg);
+	instance++;
+
+	LOG_HEXDUMP_INF(mctp_msg, get_commands_request_size, "pldm get_commands_request");
+	rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+			     get_commands_request_size);
+	if (rc != 0) {
+		LOG_WRN("Failed to send message, errno %d\n", rc);
+		return;
+	} else {
+		rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+		if (rc == -EAGAIN) {
+			LOG_WRN("Timeout waiting for get commands response");
+			return;
+		}
+	}
+}
+
+int main(void)
+{
+	int rc, i;
+
+	LOG_INF("PLDM Host EID:%d on %s\n", LOCAL_EID, CONFIG_BOARD_TARGET);
+
+	mctp_set_alloc_ops(malloc, free, realloc);
+	struct mctp_endpoint endpoints[] = {
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_serial))
+		init_mctp_uart(&mctp_host_serial),
+#endif
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_i2c))
+		init_mctp_i2c_gpio(&mctp_i2c_gpio_ctrl),
+#endif
+	};
+
+	/* We can set this one time here */
+	mctp_msg[0] = PLDM_MCTP_MESSAGE_TYPE;
+
+	/* Loop over MCTP endpoints and do PLDM discovery on them, sending a sequence of
+	 * commands and waiting on responses */
+	for (i = 0; i < ARRAY_SIZE(endpoints); i++) {
+		if (endpoints[i].mctp_ctx != NULL) {
+			pdlm_discovery(endpoints[i].mctp_ctx, endpoints[i].eid);
+		}
+	}
+
 
 	return 0;
 }

@@ -14,6 +14,7 @@
 #include <libpldm/base.h>
 #include <libmctp.h>
 #include <zephyr/pmci/mctp/mctp_uart.h>
+#include <zephyr/pmci/mctp/mctp_i2c_gpio_target.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(pldm_endpoint);
@@ -22,7 +23,7 @@ LOG_MODULE_REGISTER(pldm_endpoint);
 #define PLDM_MCTP_MESSAGE_TYPE 1
 
 /* Local MCTP Endpoint ID that responds to requests */
-#define LOCAL_EID 10
+#define SERIAL_LOCAL_EID 10
 /* Local PLDM Terminus ID that responds to requests */
 #define LOCAL_TID 2
 
@@ -38,15 +39,34 @@ const char *COMMAND_TO_STRING[] = {"UNDEFINED",      "SetTID",          "GetTID"
 				   "GetPLDMVersion", "GetPLDMTypes", "GetPLDMCommands",
 				   "SelectPLDMVersion"};
 
+struct message {
+	struct k_work work;
+	uint8_t *data;
+	size_t len;
+	uint8_t src_eid;
+};
+
+static struct message rx_msg_work;
+
 static struct mctp *mctp_ctx;
 
-static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *msg_hdr, void *msg,
-			    size_t msg_len)
+//static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *msg_hdr, void *msg,
+//			    size_t msg_len)
+static void pldm_rx_handler(struct k_work *item)
 {
 	struct pldm_header_info hdr_info;
 	const char *message_type_str = "";
 	const char *command_str = "";
 	int rc;
+
+	struct message *rx_msg = CONTAINER_OF(item, struct message, work);
+	uint8_t src_eid = rx_msg->src_eid;
+
+	LOG_INF("PLDM RX Handler called");
+
+	struct pldm_msg_hdr *msg_hdr = (struct pldm_msg_hdr *)&(rx_msg->data[1]);
+	void *msg = &((uint8_t *)rx_msg->data)[1 + sizeof(struct pldm_msg_hdr)];
+	size_t msg_len = rx_msg->len - (1 + sizeof(struct pldm_msg_hdr));
 
 	rc = unpack_pldm_header(msg_hdr, &hdr_info);
 	if (rc != 0) {
@@ -78,10 +98,13 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *ms
 
 		rc = encode_get_tid_resp(hdr_info.instance, PLDM_SUCCESS, LOCAL_TID,
 				    (struct pldm_msg *)&resp_msg_buf[1]);
+		LOG_INF("Encoding GetTID response rc %d", rc);
+		LOG_WRN("!Are we in ISR? %d", k_is_in_isr());
 		__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
 
 		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
 				     sizeof(resp_msg_buf));
+		LOG_INF("Sent GetTID response to endpoint %d", src_eid);
 		__ASSERT(rc == 0, "Sending response to GetTID should succeed");
 	} else if (hdr_info.command == PLDM_GET_PLDM_TYPES && hdr_info.msg_type == PLDM_REQUEST) {
 		/* Response buffer for the GetTID command needs
@@ -169,6 +192,7 @@ static void rx_message(uint8_t src_eid, bool tag_owner, uint8_t msg_tag, void *d
 		return;
 	}
 
+	LOG_WRN("Are we in ISR? %d", k_is_in_isr());
 	/* Treat data as a buffer for byte wise access */
 	uint8_t *msg_buf = msg;
 
@@ -176,27 +200,47 @@ static void rx_message(uint8_t src_eid, bool tag_owner, uint8_t msg_tag, void *d
 	 * the pldm_rx_message call
 	 */
 	if ((msg_buf[0] & MCTP_MESSAGE_TYPE_MASK) == PLDM_MCTP_MESSAGE_TYPE) {
+		rx_msg_work.data = msg_buf;
+		rx_msg_work.len = len;
+		rx_msg_work.src_eid = src_eid;
+		k_work_submit(&rx_msg_work.work);
 		/* HAZARD This is potentially error prone but libpldm provides little help here */
-		struct pldm_msg_hdr *pldm_hdr = (struct pldm_msg_hdr *)&(msg_buf[1]);
-		size_t pldm_msg_body_len = len - (1 + sizeof(struct pldm_msg_hdr));
-		void *pldm_msg_body = &msg_buf[1 + sizeof(struct pldm_msg_hdr)];
-
-		pldm_rx_handler(src_eid, msg, pldm_hdr, pldm_msg_body, pldm_msg_body_len);
+//		struct pldm_msg_hdr *pldm_hdr = (struct pldm_msg_hdr *)&(msg_buf[1]);
+//		size_t pldm_msg_body_len = len - (1 + sizeof(struct pldm_msg_hdr));
+//		void *pldm_msg_body = &msg_buf[1 + sizeof(struct pldm_msg_hdr)];
+//
+//		pldm_rx_handler(src_eid, msg, pldm_hdr, pldm_msg_body, pldm_msg_body_len);
 	}
 }
 
-MCTP_UART_DT_DEFINE(mctp_host, DEVICE_DT_GET(DT_NODELABEL(arduino_serial)));
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_serial))
+MCTP_UART_DT_DEFINE(mctp_endpoint, DEVICE_DT_GET(DT_NODELABEL(mctp_serial)));
+#elif DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_i2c))
+MCTP_I2C_GPIO_TARGET_DT_DEFINE(mctp_endpoint, DT_NODELABEL(mctp_i2c));
+#endif
 
 int main(void)
 {
-	LOG_INF("PLDM Endpoint EID:%d TID:%d on %s\n", LOCAL_EID, LOCAL_TID, CONFIG_BOARD_TARGET);
+	uint8_t eid;
+
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_serial))
+	eid = SERIAL_LOCAL_EID;
+#elif DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_i2c))
+	eid = mctp_endpoint.endpoint_id;
+#endif
+
+	LOG_INF("PLDM Endpoint EID:%d TID:%d on %s\n", eid, LOCAL_TID, CONFIG_BOARD_TARGET);
+
+	k_work_init(&rx_msg_work.work, pldm_rx_handler);
 
 	mctp_set_alloc_ops(malloc, free, realloc);
 	mctp_ctx = mctp_init();
 	__ASSERT_NO_MSG(mctp_ctx != NULL);
-	mctp_register_bus(mctp_ctx, &mctp_host.binding, LOCAL_EID);
+	mctp_register_bus(mctp_ctx, &mctp_endpoint.binding, eid);
 	mctp_set_rx_all(mctp_ctx, rx_message, NULL);
-	mctp_uart_start_rx(&mctp_host);
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_serial))
+	mctp_uart_start_rx(&mctp_endpoint);
+#endif
 
 	return 0;
 }
