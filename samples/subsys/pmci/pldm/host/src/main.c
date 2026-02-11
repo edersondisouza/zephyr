@@ -12,6 +12,7 @@
 #include <zephyr/types.h>
 #include <zephyr/kernel.h>
 #include <libpldm/base.h>
+#include <libpldm/platform.h>
 #include <libmctp.h>
 #include <zephyr/pmci/mctp/mctp_uart.h>
 #include <zephyr/pmci/mctp/mctp_i2c_gpio_controller.h>
@@ -41,6 +42,69 @@ const char *COMMAND_TO_STRING[] = {"UNDEFINED",      "SetTID",          "GetTID"
 				   "GetPLDMVersion", "GetPLDMTypes", "GetPLDMCommands",
 				   "SelectPLDMVersion"};
 
+const int pldm_types_array[] = {PLDM_BASE, PLDM_SMBIOS, PLDM_PLATFORM, PLDM_BIOS, PLDM_FRU,
+				PLDM_FWUP, PLDM_RDE, PLDM_FILE, PLDM_OEM};
+const char *PLDM_TYPE_TO_STRING[] = {"Base", "SMBIOS", "Platform", "BIOS", "FRU", "FWUP", "RDE",
+			    "File", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+			    "Reserved", "Reserved", "OEM"};
+
+const int pldm_base_commands_array[] = {PLDM_SET_TID, PLDM_GET_TID, PLDM_GET_PLDM_VERSION, PLDM_GET_PLDM_TYPES,
+			      PLDM_GET_PLDM_COMMANDS, PLDM_SELECT_PLDM_VERSION,
+			      PLDM_NEGOTIATE_TRANSFER_PARAMETERS, PLDM_MULTIPART_SEND,
+			      PLDM_MULTIPART_RECEIVE, PLDM_GET_MULTIPART_TRANSFER_SUPPORT};
+const char *PLDM_BASE_COMMAND_TO_STRING[] = {"SetTID", "GetTID", "GetPLDMVersion", "GetPLDMTypes",
+			      "GetPLDMCommands", "SelectPLDMVersion",
+			      "NegotiateTransferParameters", "MultipartSend",
+			      "MultipartReceive", "GetMultipartTransferSupport"};
+
+const int pldm_platform_commands_array[] = {PLDM_GET_TERMINUS_UID, PLDM_SET_EVENT_RECEIVER,
+				 PLDM_GET_EVENT_RECEIVER, PLDM_PLATFORM_EVENT_MESSAGE,
+				 PLDM_POLL_FOR_PLATFORM_EVENT_MESSAGE, PLDM_EVENT_MESSAGE_SUPPORTED,
+				 PLDM_EVENT_MESSAGE_BUFFER_SIZE, PLDM_SET_NUMERIC_SENSOR_ENABLE,
+				 PLDM_GET_SENSOR_READING, PLDM_GET_SENSOR_THRESHOLDS,
+				 PLDM_SET_SENSOR_THRESHOLDS, PLDM_RESTORE_SENSOR_THRESHOLDS,
+				 PLDM_GET_SENSOR_HYSTERESIS, PLDM_SET_SENSOR_HYSTERESIS,
+				 PLDM_INIT_NUMERIC_SENSOR, PLDM_SET_STATE_SENSOR_ENABLES,
+				 PLDM_GET_STATE_SENSOR_READINGS, PLDM_INIT_STATE_SENSOR,
+				 PLDM_SET_NUMERIC_EFFECTER_ENABLE, PLDM_SET_NUMERIC_EFFECTER_VALUE,
+				 PLDM_GET_NUMERIC_EFFECTER_VALUE, PLDM_SET_STATE_EFFECTER_ENABLES,
+				 PLDM_SET_STATE_EFFECTER_STATES, PLDM_GET_STATE_EFFECTER_STATES,
+				 PLDM_GET_PLDM_EVENT_LOG_INFO, PLDM_ENABLE_PLDM_EVENT_LOGGING,
+				 PLDM_CLEAR_PLDM_EVENT_LOG, PLDM_GET_PLDM_EVENT_LOG_TIMESTAMP,
+				 PLDM_SET_PLDM_EVENT_LOG_TIMESTAMP, PLDM_READ_PLDM_EVENT_LOG,
+				 PLDM_GET_PLDM_EVENT_LOG_POLICY_INFO, PLDM_SET_PLDM_EVENT_LOG_POLICY,
+				 PLDM_FIND_PLDM_EVENT_LOG_ENTRY, PLDM_GET_PDR_REPOSITORY_INFO,
+				 PLDM_GET_PDR, PLDM_FIND_PDR, PLDM_RUN_INIT_AGENT,
+				 PLDM_GET_PDR_REPOSITORY_SIGNATURE
+};
+
+const char *PLDM_PLATFORM_COMMAND_TO_STRING[] = {"GetTerminusUID", "SetEventReceiver",
+				 "GetEventReceiver", "PlatformEventMessage",
+				 "PollForPlatformEventMessage", "EventMessageSupported",
+				 "EventMessageBufferSize", "SetNumericSensorEnable",
+				 "GetSensorReading", "GetSensorThresholds",
+				 "SetSensorThresholds", "RestoreSensorThresholds",
+				 "GetSensorHysteresis", "SetSensorHysteresis", "InitNumericSensor",
+				 "SetStateSensorEnables", "GetStateSensorReadings",
+				 "InitStateSensor", "SetNumericEffecterEnable",
+				 "SetNumericEffecterValue", "GetNumericEffecterValue",
+				 "SetStateEffecterEnables", "SetStateEffecterStates",
+				 "GetStateEffecterStates", "GetPLDMEventLogInfo",
+				 "EnablePLDMEventLogging", "ClearPLDMEventLog",
+				 "GetPLDMEventLogTimestamp", "SetPLDMEventLogTimestamp",
+				 "ReadPLDMEventLog", "GetPLDMEventLogPolicyInfo",
+				 "SetPLDMEventLogPolicy", "FindPLDMEventLogEntry",
+				 "GetPDRRepositoryInfo", "GetPDR", "FindPDR", "RunInitAgent",
+				 "GetPDRRepositorySignature"
+};
+
+const int supported_pldm_types_array[] = {PLDM_BASE, PLDM_PLATFORM};
+const char *SUPPORTED_TYPE_TO_STRING[] = {"Base", "Platform"};
+
+const int supported_platform_commands_array[] = {PLDM_GET_SENSOR_READING,
+						 PLDM_GET_PDR_REPOSITORY_INFO, PLDM_GET_PDR};
+};
+
 struct mctp_endpoint {
 	uint8_t eid;
 	struct mctp *mctp_ctx;
@@ -69,74 +133,51 @@ static uint8_t tid;
 static uint8_t types[8];
 static uint8_t commands[32];
 static ver32_t version;
+enum pldm_supported_types expecting_type;
 
 /* Discovery if and what a MCTP endpoint can do */
 /* TODO pldm_discovery(struct mctp *mctp_ctx, uint8_t eid, struct pldm_tid_info *tid_info); */
 
 static void print_supported_commands(bitfield8_t *commands)
 {
-	LOG_INF("Supported PLDM Commands:");
-	if (IS_BIT_SET(commands[0].byte, PLDM_SET_TID)) {
-		LOG_INF(" - PLDM_SET_TID");
-	}
-	if (IS_BIT_SET(commands[0].byte, PLDM_GET_TID)) {
-		LOG_INF(" - PLDM_GET_TID");
-	}
-	if (IS_BIT_SET(commands[0].byte, PLDM_GET_PLDM_VERSION)) {
-		LOG_INF(" - PLDM_GET_PLDM_VERSION");
-	}
-	if (IS_BIT_SET(commands[0].byte, PLDM_GET_PLDM_TYPES)) {
-		LOG_INF(" - PLDM_GET_PLDM_TYPES");
-	}
-	if (IS_BIT_SET(commands[0].byte, PLDM_GET_PLDM_COMMANDS)) {
-		LOG_INF(" - PLDM_GET_PLDM_COMMANDS");
-	}
-	if (IS_BIT_SET(commands[0].byte, PLDM_SELECT_PLDM_VERSION)) {
-		LOG_INF(" - PLDM_SELECT_PLDM_VERSION");
-	}
-	if (IS_BIT_SET(commands[0].byte, PLDM_NEGOTIATE_TRANSFER_PARAMETERS)) {
-		LOG_INF(" - PLDM_NEGOTIATE_TRANSFER_PARAMETERS");
-	}
-	if (IS_BIT_SET(commands[1].byte, PLDM_MULTIPART_SEND - 8)) {
-		LOG_INF(" - PLDM_MULTIPART_SEND");
-	}
-	if (IS_BIT_SET(commands[1].byte, PLDM_MULTIPART_RECEIVE - 8)) {
-		LOG_INF(" - PLDM_MULTIPART_RECEIVE");
-	}
-	if (IS_BIT_SET(commands[1].byte, PLDM_GET_MULTIPART_TRANSFER_SUPPORT - 8)) {
-		LOG_INF(" - PLDM_GET_MULTIPART_TRANSFER_SUPPORT");
+	int i, byte_idx, bit_idx;
+
+	LOG_INF("Supported PLDM Commands for type %s:", PLDM_TYPE_TO_STRING[expecting_type]);
+
+	if (expecting_type == PLDM_BASE) {
+		for (i = 0; i < ARRAY_SIZE(pldm_base_commands_array); i++) {
+			byte_idx = pldm_base_commands_array[i] / 8;
+			bit_idx = pldm_base_commands_array[i] % 8;
+
+			if (IS_BIT_SET(commands[byte_idx].byte, bit_idx)) {
+				LOG_INF(" - %s", PLDM_BASE_COMMAND_TO_STRING[i]);
+			}
+		}
+	} else if (expecting_type == PLDM_PLATFORM) {
+		for (i = 0; i < ARRAY_SIZE(pldm_platform_commands_array); i++) {
+			byte_idx = pldm_platform_commands_array[i] / 8;
+			bit_idx = pldm_platform_commands_array[i] % 8;
+
+			if (IS_BIT_SET(commands[byte_idx].byte, bit_idx)) {
+				LOG_INF(" - %s", PLDM_PLATFORM_COMMAND_TO_STRING[i]);
+			}
+		}
 	}
 }
 
 static void print_supported_types(bitfield8_t *types)
 {
+	int i;
+
 	LOG_INF("Supported PLDM Types:");
-	if (IS_BIT_SET(types[0].byte, PLDM_BASE)) {
-		LOG_INF(" - PLDM_BASE");
-	}
-	if (IS_BIT_SET(types[0].byte, PLDM_SMBIOS)) {
-		LOG_INF(" - PLDM_SMBIOS");
-	}
-	if (IS_BIT_SET(types[0].byte, PLDM_PLATFORM)) {
-		LOG_INF(" - PLDM_PLATFORM");
-	}
-	if (IS_BIT_SET(types[0].byte, PLDM_BIOS)) {
-		LOG_INF(" - PLDM_BIOS");
-	}
-	if (IS_BIT_SET(types[0].byte, PLDM_FRU)) {
-		LOG_INF(" - PLDM_FRU");
-	}
-	if (IS_BIT_SET(types[0].byte, PLDM_FWUP)) {
-		LOG_INF(" - PLDM_FWUP");
-	}
-	if (IS_BIT_SET(types[0].byte, PLDM_RDE)) {
-		LOG_INF(" - PLDM_RDE");
-	}
-	if (IS_BIT_SET(types[0].byte, PLDM_FILE)) {
-		LOG_INF(" - PLDM_FILE");
-	}
-	if (IS_BIT_SET(types[7].byte, PLDM_OEM - 56)) {
-		LOG_INF(" - PLDM_OEM");
+
+	for (i = 0; i < ARRAY_SIZE(pldm_types_array); i++) {
+		int byte_idx = pldm_types_array[i] / 8;
+		int bit_idx = pldm_types_array[i] % 8;
+
+		if (IS_BIT_SET(types[byte_idx].byte, bit_idx)) {
+			LOG_INF(" - %s", PLDM_TYPE_TO_STRING[pldm_types_array[i]]);
+		}
 	}
 }
 
@@ -276,7 +317,7 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 {
 	LOG_INF("Starting PLDM discovery on MCTP EID %d", eid);
 	/* TODO implement discovery */
-	int rc;
+	int i, rc;
 
 	/* PLDM message is after the MCTP message type byte */
 	struct pldm_msg *msg = &mctp_msg[1];
@@ -304,6 +345,8 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 	uint8_t get_types_request_size = PLDM_MSG_SIZE(0) + 1;
 
 	/* GetPLDMTypes request/response */
+	memset(types, 0, sizeof(types));
+
 	encode_get_types_req(instance, msg);
 	instance++;
 
@@ -325,47 +368,59 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 	 * and available commands for each version (or a selected version)
 	 */
 
-	uint8_t pldm_type = PLDM_BASE;
-
-	/* GetPLDMVersion request/response */
-	uint32_t transfer_handle = 0;
-	uint8_t transfer_opflag = PLDM_GET_FIRSTPART;
-	uint8_t get_version_request_size = PLDM_MSG_SIZE(PLDM_GET_VERSION_REQ_BYTES) + 1;
-
-	encode_get_version_req(instance, transfer_handle, transfer_opflag, pldm_type, msg);
-	instance++;
-
-	LOG_HEXDUMP_INF(mctp_msg, get_version_request_size, "pldm get_version_request");
-	rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
-			     get_version_request_size);
-	if (rc != 0) {
-		LOG_WRN("Failed to send message, errno %d\n", rc);
-		return;
-	} else {
-		rc = k_sem_take(&mctp_rx, K_MSEC(1000));
-		if (rc == -EAGAIN) {
-			LOG_WRN("Timeout waiting for get version response");
-			return;
+	for (i = 0; i < ARRAY_SIZE(supported_pldm_types_array) ; i++) {
+		printk("type %d\n", supported_pldm_types_array[i]);
+	
+		int byte_idx = supported_pldm_types_array[i] / 8;
+		int bit_idx = supported_pldm_types_array[i] % 8;
+		if (!IS_BIT_SET(types[byte_idx], bit_idx)) {
+			printk("type %s not supported, skipping\n", SUPPORTED_TYPE_TO_STRING[i]);
+			continue;
 		}
-	}
+		uint8_t pldm_type = supported_pldm_types_array[i];
+		expecting_type = pldm_type;
 
-	/* GetPLDMCommands request/response */
-	uint8_t get_commands_request_size = PLDM_MSG_SIZE(PLDM_GET_COMMANDS_REQ_BYTES) + 1;
+		printk("Getting version and commands for type %s\n", SUPPORTED_TYPE_TO_STRING[i]);
+		/* GetPLDMVersion request/response */
+		uint32_t transfer_handle = 0;
+		uint8_t transfer_opflag = PLDM_GET_FIRSTPART;
+		uint8_t get_version_request_size = PLDM_MSG_SIZE(PLDM_GET_VERSION_REQ_BYTES) + 1;
 
-	encode_get_commands_req(instance, pldm_type, version, msg);
-	instance++;
+		encode_get_version_req(instance, transfer_handle, transfer_opflag, pldm_type, msg);
+		instance++;
 
-	LOG_HEXDUMP_INF(mctp_msg, get_commands_request_size, "pldm get_commands_request");
-	rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
-			     get_commands_request_size);
-	if (rc != 0) {
-		LOG_WRN("Failed to send message, errno %d\n", rc);
-		return;
-	} else {
-		rc = k_sem_take(&mctp_rx, K_MSEC(1000));
-		if (rc == -EAGAIN) {
-			LOG_WRN("Timeout waiting for get commands response");
+		LOG_HEXDUMP_INF(mctp_msg, get_version_request_size, "pldm get_version_request");
+		rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+				     get_version_request_size);
+		if (rc != 0) {
+			LOG_WRN("Failed to send message, errno %d\n", rc);
 			return;
+		} else {
+			rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+			if (rc == -EAGAIN) {
+				LOG_WRN("Timeout waiting for get version response");
+				return;
+			}
+		}
+
+		/* GetPLDMCommands request/response */
+		uint8_t get_commands_request_size = PLDM_MSG_SIZE(PLDM_GET_COMMANDS_REQ_BYTES) + 1;
+
+		encode_get_commands_req(instance, pldm_type, version, msg);
+		instance++;
+
+		LOG_HEXDUMP_INF(mctp_msg, get_commands_request_size, "pldm get_commands_request");
+		rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+				     get_commands_request_size);
+		if (rc != 0) {
+			LOG_WRN("Failed to send message, errno %d\n", rc);
+			return;
+		} else {
+			rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+			if (rc == -EAGAIN) {
+				LOG_WRN("Timeout waiting for get commands response");
+				return;
+			}
 		}
 	}
 }

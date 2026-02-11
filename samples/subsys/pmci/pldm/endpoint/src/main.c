@@ -12,6 +12,7 @@
 #include <zephyr/types.h>
 #include <zephyr/kernel.h>
 #include <libpldm/base.h>
+#include <libpldm/platform.h>
 #include <libmctp.h>
 #include <zephyr/pmci/mctp/mctp_uart.h>
 #include <zephyr/pmci/mctp/mctp_i2c_gpio_target.h>
@@ -64,11 +65,10 @@ static void pldm_rx_handler(struct k_work *item)
 
 	LOG_INF("PLDM RX Handler called");
 
-	struct pldm_msg_hdr *msg_hdr = (struct pldm_msg_hdr *)&(rx_msg->data[1]);
-	void *msg = &((uint8_t *)rx_msg->data)[1 + sizeof(struct pldm_msg_hdr)];
-	size_t msg_len = rx_msg->len - (1 + sizeof(struct pldm_msg_hdr));
+	struct pldm_msg *msg = (struct pldm_msg *)rx_msg->data;
+	size_t msg_len = rx_msg->len - sizeof(struct pldm_msg_hdr);
 
-	rc = unpack_pldm_header(msg_hdr, &hdr_info);
+	rc = unpack_pldm_header(&msg->hdr, &hdr_info);
 	if (rc != 0) {
 		LOG_ERR("Failed unpacking pldm header");
 	}
@@ -113,7 +113,7 @@ static void pldm_rx_handler(struct k_work *item)
 		 */
 		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_TYPES_RESP_BYTES) + 1];
 		const bitfield8_t types[8] = {
-			{ .byte = BIT(PLDM_BASE) },
+			{ .byte = BIT(PLDM_BASE) | BIT(PLDM_PLATFORM)},
 			{ 0 },
 		};
 		
@@ -131,8 +131,15 @@ static void pldm_rx_handler(struct k_work *item)
 		uint8_t transfer_opflag;
 		uint8_t type;
 
-		rc = decode_get_version_req(msg, PLDM_GET_VERSION_REQ_BYTES, &transfer_handle, &transfer_opflag, &type);
+		rc = decode_get_version_req(msg, msg_len, &transfer_handle, &transfer_opflag, &type);
 		__ASSERT(rc == PLDM_SUCCESS, "Decoding GetVersion request should succeed");
+		printk("Decoded GetVersion request, transfer handle %u, transfer opflag %u, type %u\n",
+		       transfer_handle, transfer_opflag, type);
+
+		if ((type != PLDM_BASE && type != PLDM_PLATFORM)) {
+			LOG_WRN("Unsupported type requested in GetPLDMVersion: %d", type);
+			return;
+		}
 
 		
 		/* Response buffer for the GetTID command needs
@@ -152,24 +159,34 @@ static void pldm_rx_handler(struct k_work *item)
 				     sizeof(resp_msg_buf));
 		__ASSERT(rc == 0, "Sending response to GetVersion should succeed");
 	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS && hdr_info.msg_type == PLDM_REQUEST) {
+		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_COMMANDS_RESP_BYTES) + 1];
+		bitfield8_t commands[32] = { 0 };
 		uint8_t type;
 		ver32_t vers;
 
 		rc = decode_get_commands_req(msg, PLDM_GET_COMMANDS_REQ_BYTES, &type, &vers);
-
 		__ASSERT(rc == PLDM_SUCCESS, "Decoding GetCommands request should succeed");
+		printk("Decoded GetCommands request, type %u, version %u.%u\n", type, vers.major, vers.minor);
 
-		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_COMMANDS_RESP_BYTES) + 1];
-		const bitfield8_t commands[32] = {
-			{ .byte = BIT(PLDM_GET_TID) | BIT(PLDM_GET_PLDM_VERSION) |
-				  BIT(PLDM_GET_PLDM_TYPES) | BIT(PLDM_GET_PLDM_COMMANDS) },
-			{ 0 },
-		};
+		if ((type != PLDM_BASE && type != PLDM_PLATFORM)) {
+			LOG_WRN("Unsupported type requested in GetPLDMCommands: %d", type);
+			return;
+		}
 
 		resp_msg_buf[0] = PLDM_MCTP_MESSAGE_TYPE;
-		rc = encode_get_commands_resp(hdr_info.instance, PLDM_SUCCESS, commands,
-				    (struct pldm_msg *)&resp_msg_buf[1]);
-		__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
+
+		if (type == PLDM_BASE) {
+			commands[0].byte = BIT(PLDM_GET_TID) | BIT(PLDM_GET_PLDM_VERSION) |
+					  BIT(PLDM_GET_PLDM_TYPES) | BIT(PLDM_GET_PLDM_COMMANDS);
+		} else if (type == PLDM_PLATFORM) {
+			commands[PLDM_GET_SENSOR_READING / 8].byte = BIT(PLDM_GET_SENSOR_READING % 8);
+			commands[PLDM_GET_PDR_REPOSITORY_INFO / 8].byte = BIT(PLDM_GET_PDR_REPOSITORY_INFO % 8) |
+									 BIT(PLDM_GET_PDR % 8);
+		}
+
+			rc = encode_get_commands_resp(hdr_info.instance, PLDM_SUCCESS, commands,
+					    (struct pldm_msg *)&resp_msg_buf[1]);
+			__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
 
 		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
 				     sizeof(resp_msg_buf));
@@ -192,6 +209,7 @@ static void rx_message(uint8_t src_eid, bool tag_owner, uint8_t msg_tag, void *d
 		return;
 	}
 
+	// TODO figure out who owns `msg`!
 	LOG_WRN("Are we in ISR? %d", k_is_in_isr());
 	/* Treat data as a buffer for byte wise access */
 	uint8_t *msg_buf = msg;
@@ -200,8 +218,8 @@ static void rx_message(uint8_t src_eid, bool tag_owner, uint8_t msg_tag, void *d
 	 * the pldm_rx_message call
 	 */
 	if ((msg_buf[0] & MCTP_MESSAGE_TYPE_MASK) == PLDM_MCTP_MESSAGE_TYPE) {
-		rx_msg_work.data = msg_buf;
-		rx_msg_work.len = len;
+		rx_msg_work.data = &msg_buf[1];
+		rx_msg_work.len = len - 1;
 		rx_msg_work.src_eid = src_eid;
 		k_work_submit(&rx_msg_work.work);
 		/* HAZARD This is potentially error prone but libpldm provides little help here */
@@ -231,6 +249,7 @@ int main(void)
 
 	LOG_INF("PLDM Endpoint EID:%d TID:%d on %s\n", eid, LOCAL_TID, CONFIG_BOARD_TARGET);
 
+	LOG_INF("decode_set_tid_req: %d", decode_set_tid_req(NULL, 30, NULL));
 	k_work_init(&rx_msg_work.work, pldm_rx_handler);
 
 	mctp_set_alloc_ops(malloc, free, realloc);
