@@ -12,6 +12,8 @@
 #include <zephyr/types.h>
 #include <zephyr/kernel.h>
 #include <libpldm/base.h>
+#include <libpldm/edac.h>
+#include <libpldm/entity.h>
 #include <libpldm/platform.h>
 #include <libmctp.h>
 #include <zephyr/pmci/mctp/mctp_uart.h>
@@ -184,15 +186,54 @@ static void pldm_rx_handler(struct k_work *item)
 									 BIT(PLDM_GET_PDR % 8);
 		}
 
-			rc = encode_get_commands_resp(hdr_info.instance, PLDM_SUCCESS, commands,
-					    (struct pldm_msg *)&resp_msg_buf[1]);
-			__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
+		rc = encode_get_commands_resp(hdr_info.instance, PLDM_SUCCESS, commands,
+				    (struct pldm_msg *)&resp_msg_buf[1]);
+		__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
 
 		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
 				     sizeof(resp_msg_buf));
 		__ASSERT(rc == 0, "Sending response to GetCommands should succeed");
-	} else if (hdr_info.command == PLDM_SELECT_PLDM_VERSION && hdr_info.msg_type == PLDM_REQUEST) {
-		LOG_WRN("Not implemented: GetPLDMCommands");
+	} else if (hdr_info.command == PLDM_GET_PDR && hdr_info.msg_type == PLDM_REQUEST) {
+		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_PDR_MIN_RESP_BYTES + PLDM_PDR_NUMERIC_SENSOR_PDR_MIN_LENGTH) + 1];
+		/* No encode on libpldm for the PDR itself, only the common part, so do it manually =/ */
+		struct pldm_compact_numeric_sensor_pdr sensor_pdr = {
+			.hdr = {
+				.record_handle = 0,
+				.version = 1,
+				.type = PLDM_COMPACT_NUMERIC_SENSOR_PDR,
+				.record_change_num = 0,
+				.length = sys_cpu_to_le16(sizeof(struct pldm_compact_numeric_sensor_pdr)),
+			},
+			.terminus_handle = sys_cpu_to_le16(LOCAL_TID),
+			.sensor_id = sys_cpu_to_le16(1),
+			.entity_type = sys_cpu_to_le16(PLDM_ENTITY_TERMINUS | (1 << 15)),
+			.entity_instance = sys_cpu_to_le16(1),
+			.container_id = 0,
+			.sensor_name_length = 0,
+			.base_unit = PLDM_SENSOR_UNIT_DEGRESS_F,
+			.unit_modifier = 0,
+			.occurrence_rate = PLDM_RATE_UNIT_NONE,
+			.range_field_support.byte = 0,
+			.warning_high = sys_cpu_to_le32(100),
+			.warning_low = sys_cpu_to_le32(-100),
+			.critical_high = sys_cpu_to_le32(150),
+			.critical_low = sys_cpu_to_le32(-150),
+			.fatal_high = sys_cpu_to_le32(200),
+			.fatal_low = sys_cpu_to_le32(-200),
+		};
+
+		resp_msg_buf[0] = PLDM_MCTP_MESSAGE_TYPE;
+
+		rc = encode_get_pdr_resp(hdr_info.instance, PLDM_SUCCESS, 0, 0,
+					 PLDM_PLATFORM_TRANSFER_START_AND_END, sizeof(sensor_pdr),
+					 (uint8_t *)&sensor_pdr,
+					 pldm_edac_crc8((uint8_t *)&sensor_pdr, sizeof(sensor_pdr)),
+					 (struct pldm_msg *)&resp_msg_buf[1]);
+		__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
+
+		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
+				     sizeof(resp_msg_buf));
+		__ASSERT(rc == 0, "Sending response to GetPDR should succeed");
 	} else {
 		LOG_WRN("Unhandled pldm message, command %d, type %d", hdr_info.command, hdr_info.msg_type);
 	}

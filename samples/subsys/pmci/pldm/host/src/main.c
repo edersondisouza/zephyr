@@ -34,6 +34,27 @@ LOG_MODULE_REGISTER(pldm_host);
 #define MCTP_INTEGRITY_CHECK   0x80
 #define MCTP_MESSAGE_TYPE_MASK 0x7F
 
+//struct pldm_compact_numeric_sensor_pdr {
+//	struct pldm_pdr_hdr hdr;
+//	uint16_t terminus_handle;
+//	uint16_t sensor_id;
+//	uint16_t entity_type;
+//	uint16_t entity_instance;
+//	uint16_t container_id;
+//	uint8_t sensor_name_length;
+//	uint8_t base_unit;
+//	int8_t unit_modifier;
+//	uint8_t occurrence_rate;
+//	bitfield8_t range_field_support;
+//	int32_t warning_high;
+//	int32_t warning_low;
+//	int32_t critical_high;
+//	int32_t critical_low;
+//	int32_t fatal_high;
+//	int32_t fatal_low;
+//	uint8_t sensor_name[1];
+//} __attribute__((packed));
+
 K_SEM_DEFINE(mctp_rx, 0, 1);
 
 const char *MESSAGE_TYPE_TO_STRING[] = {"Response", "Request", "Reserved", "Async Request Notify"};
@@ -103,7 +124,6 @@ const char *SUPPORTED_TYPE_TO_STRING[] = {"Base", "Platform"};
 
 const int supported_platform_commands_array[] = {PLDM_GET_SENSOR_READING,
 						 PLDM_GET_PDR_REPOSITORY_INFO, PLDM_GET_PDR};
-};
 
 struct mctp_endpoint {
 	uint8_t eid;
@@ -134,31 +154,34 @@ static uint8_t types[8];
 static uint8_t commands[32];
 static ver32_t version;
 enum pldm_supported_types expecting_type;
+struct pldm_compact_numeric_sensor_pdr sensor_pdr;
 
 /* Discovery if and what a MCTP endpoint can do */
 /* TODO pldm_discovery(struct mctp *mctp_ctx, uint8_t eid, struct pldm_tid_info *tid_info); */
 
+static bool is_bit_set(bitfield8_t *bitfield, uint32_t bit)
+{
+	int byte_idx = bit / 8;
+	int bit_idx = bit % 8;
+
+	return IS_BIT_SET(bitfield[byte_idx].byte, bit_idx);
+}
+
 static void print_supported_commands(bitfield8_t *commands)
 {
-	int i, byte_idx, bit_idx;
+	int i;
 
 	LOG_INF("Supported PLDM Commands for type %s:", PLDM_TYPE_TO_STRING[expecting_type]);
 
 	if (expecting_type == PLDM_BASE) {
 		for (i = 0; i < ARRAY_SIZE(pldm_base_commands_array); i++) {
-			byte_idx = pldm_base_commands_array[i] / 8;
-			bit_idx = pldm_base_commands_array[i] % 8;
-
-			if (IS_BIT_SET(commands[byte_idx].byte, bit_idx)) {
+			if (is_bit_set(commands, pldm_base_commands_array[i])) {
 				LOG_INF(" - %s", PLDM_BASE_COMMAND_TO_STRING[i]);
 			}
 		}
 	} else if (expecting_type == PLDM_PLATFORM) {
 		for (i = 0; i < ARRAY_SIZE(pldm_platform_commands_array); i++) {
-			byte_idx = pldm_platform_commands_array[i] / 8;
-			bit_idx = pldm_platform_commands_array[i] % 8;
-
-			if (IS_BIT_SET(commands[byte_idx].byte, bit_idx)) {
+			if (is_bit_set(commands, pldm_platform_commands_array[i])) {
 				LOG_INF(" - %s", PLDM_PLATFORM_COMMAND_TO_STRING[i]);
 			}
 		}
@@ -172,10 +195,7 @@ static void print_supported_types(bitfield8_t *types)
 	LOG_INF("Supported PLDM Types:");
 
 	for (i = 0; i < ARRAY_SIZE(pldm_types_array); i++) {
-		int byte_idx = pldm_types_array[i] / 8;
-		int bit_idx = pldm_types_array[i] % 8;
-
-		if (IS_BIT_SET(types[byte_idx].byte, bit_idx)) {
+		if (is_bit_set(types, pldm_types_array[i])) {
 			LOG_INF(" - %s", PLDM_TYPE_TO_STRING[pldm_types_array[i]]);
 		}
 	}
@@ -234,6 +254,53 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 
 		LOG_INF("get version response, completion code %d, version %d.%d", comp_code,
 			version.major, version.minor);
+	} else if (hdr_info.command == PLDM_GET_PDR &&
+		   hdr_info.msg_type == PLDM_RESPONSE) {
+		uint32_t next_record_handle;
+		uint32_t next_data_transfer_handle;
+		uint8_t transfer_flag;
+		uint16_t resp_cnt;
+		uint8_t record_data[128];
+		uint8_t transfer_crc;
+		struct pldm_pdr_hdr *pdr_hdr = (struct pldm_pdr_hdr *)record_data;
+
+		decode_get_pdr_resp(msg, msg_len - sizeof(struct pldm_msg_hdr), &comp_code,
+				    &next_record_handle, &next_data_transfer_handle, &transfer_flag,
+				    &resp_cnt, record_data, sizeof(record_data), &transfer_crc);
+
+		LOG_INF("get pdr response, completion code %d, next record handle %d, next data transfer "
+			"handle %d, transfer flag %d, record count %d, transfer crc %d",
+			comp_code, next_record_handle, next_data_transfer_handle, transfer_flag,
+			resp_cnt, transfer_crc);
+		LOG_HEXDUMP_INF(record_data, resp_cnt, "pdr record data");
+
+		if (pdr_hdr->type != PLDM_COMPACT_NUMERIC_SENSOR_PDR) {
+			LOG_WRN("Received PDR record with unexpected type %d, expected %d",
+				pdr_hdr->type, PLDM_COMPACT_NUMERIC_SENSOR_PDR);
+		} else if (resp_cnt < sizeof(struct pldm_compact_numeric_sensor_pdr)) {
+			LOG_WRN("Received PDR record with insufficient data length %d, expected at least %zu",
+				resp_cnt, sizeof(struct pldm_compact_numeric_sensor_pdr));
+		} else {
+			struct pldm_compact_numeric_sensor_pdr *sensor_pdr =
+				(struct pldm_compact_numeric_sensor_pdr *)record_data;
+
+			LOG_INF("Parsed Compact Numeric Sensor PDR: terminus handle %d, sensor id %d, entity "
+				"type %d, entity instance %d, container id %d, sensor name length %d, "
+				"base unit %d, unit modifier %d, occurrence rate %d, range field support "
+				"%d, warning high %d, warning low %d, critical high %d, critical low %d, "
+				"fatal high %d, fatal low %d, sensor name %.*s",
+				sensor_pdr->terminus_handle, sensor_pdr->sensor_id,
+				sensor_pdr->entity_type, sensor_pdr->entity_instance,
+				sensor_pdr->container_id, sensor_pdr->sensor_name_length,
+				sensor_pdr->base_unit, sensor_pdr->unit_modifier,
+				sensor_pdr->occurrence_rate,
+				sensor_pdr->range_field_support.byte,
+				sensor_pdr->warning_high, sensor_pdr->warning_low,
+				sensor_pdr->critical_high, sensor_pdr->critical_low,
+				sensor_pdr->fatal_high, sensor_pdr->fatal_low,
+				sensor_pdr->sensor_name_length, sensor_pdr->sensor_name);
+		}
+
 	} else {
 		LOG_WRN("unhandled message command %d and type %d", hdr_info.command,
 			hdr_info.msg_type);
@@ -317,7 +384,7 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 {
 	LOG_INF("Starting PLDM discovery on MCTP EID %d", eid);
 	/* TODO implement discovery */
-	int i, rc;
+	int i, j, rc;
 
 	/* PLDM message is after the MCTP message type byte */
 	struct pldm_msg *msg = &mctp_msg[1];
@@ -371,9 +438,7 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 	for (i = 0; i < ARRAY_SIZE(supported_pldm_types_array) ; i++) {
 		printk("type %d\n", supported_pldm_types_array[i]);
 	
-		int byte_idx = supported_pldm_types_array[i] / 8;
-		int bit_idx = supported_pldm_types_array[i] % 8;
-		if (!IS_BIT_SET(types[byte_idx], bit_idx)) {
+		if (!is_bit_set(types, supported_pldm_types_array[i])) {
 			printk("type %s not supported, skipping\n", SUPPORTED_TYPE_TO_STRING[i]);
 			continue;
 		}
@@ -422,6 +487,35 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 				return;
 			}
 		}
+
+		/* If commands supported include GetPDR, let's get the first one */
+		if (is_bit_set(commands, PLDM_GET_PDR)) {
+			uint8_t get_pdr_request_size = PLDM_MSG_SIZE(PLDM_GET_PDR_REQ_BYTES) + 1;
+			uint32_t record_handle = 0;
+			uint32_t data_transfer_handle = 0;
+			uint8_t transfer_opflag = PLDM_GET_FIRSTPART;
+			uint16_t request_cnt = 128;
+			uint16_t record_chg_num = 0;
+
+			encode_get_pdr_req(instance, record_handle, data_transfer_handle, transfer_opflag,
+					   request_cnt, record_chg_num, msg, PLDM_GET_PDR_REQ_BYTES);
+			instance++;
+
+			LOG_HEXDUMP_INF(mctp_msg, get_pdr_request_size, "pldm get_pdr_request");
+			rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+						     get_pdr_request_size);
+			if (rc != 0) {
+				LOG_WRN("Failed to send message, errno %d\n", rc);
+				return;
+			} else {
+				rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+				if (rc == -EAGAIN) {
+					LOG_WRN("Timeout waiting for get pdr response");
+					return;
+				}
+			}
+		}
+
 	}
 }
 
