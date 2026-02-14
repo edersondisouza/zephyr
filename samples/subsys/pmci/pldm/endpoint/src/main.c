@@ -18,6 +18,7 @@
 #include <libmctp.h>
 #include <zephyr/pmci/mctp/mctp_uart.h>
 #include <zephyr/pmci/mctp/mctp_i2c_gpio_target.h>
+#include <zephyr/drivers/sensor.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(pldm_endpoint);
@@ -52,6 +53,23 @@ struct message {
 static struct message rx_msg_work;
 
 static struct mctp *mctp_ctx;
+
+int read_temperature(const struct device *dev, struct sensor_value *val)
+{
+	int ret;
+
+	ret = sensor_sample_fetch_chan(dev, SENSOR_CHAN_AMBIENT_TEMP);
+	if (ret < 0) {
+		printf("Could not fetch temperature: %d\n", ret);
+		return ret;
+	}
+
+	ret = sensor_channel_get(dev, SENSOR_CHAN_AMBIENT_TEMP, val);
+	if (ret < 0) {
+		printf("Could not get temperature: %d\n", ret);
+	}
+	return ret;
+}
 
 //static void pldm_rx_handler(uint8_t src_eid, void *data, struct pldm_msg_hdr *msg_hdr, void *msg,
 //			    size_t msg_len)
@@ -213,8 +231,8 @@ static void pldm_rx_handler(struct k_work *item)
 			.entity_instance = sys_cpu_to_le16(1),
 			.container_id = 0,
 			.sensor_name_length = 0,
-			.base_unit = PLDM_SENSOR_UNIT_DEGRESS_F,
-			.unit_modifier = 0,
+			.base_unit = PLDM_SENSOR_UNIT_DEGRESS_C,
+			.unit_modifier = -1,
 			.occurrence_rate = PLDM_RATE_UNIT_NONE,
 			.range_field_support.byte = 0,
 			.warning_high = sys_cpu_to_le32(100),
@@ -238,6 +256,8 @@ static void pldm_rx_handler(struct k_work *item)
 				     sizeof(resp_msg_buf));
 		__ASSERT(rc == 0, "Sending response to GetPDR should succeed");
 	} else if (hdr_info.command == PLDM_GET_SENSOR_READING && hdr_info.msg_type == PLDM_REQUEST) {
+		const struct device *const dev = DEVICE_DT_GET(DT_ALIAS(ambient_temp0));
+		struct sensor_value value;
 		/* There's already one byte for the reading, so only need to add sizeof(int32_t) - 1 */
 		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_SENSOR_READING_MIN_RESP_BYTES) + (sizeof(int32_t) - 1) + 1];
 		uint16_t sensor_id;
@@ -248,7 +268,7 @@ static void pldm_rx_handler(struct k_work *item)
 		uint8_t present_state = PLDM_SENSOR_NORMAL;
 		uint8_t previous_state = PLDM_SENSOR_UNKNOWN;
 		uint8_t event_state = PLDM_SENSOR_NORMAL;
-		int32_t reading = 42; // TODO get from a real temperature sensor!
+		int32_t reading;
 
 		rc = decode_get_sensor_reading_req(msg, msg_len, &sensor_id, &rearm);
 		__ASSERT(rc == PLDM_SUCCESS, "Decoding GetSensorReading request should succeed");
@@ -257,6 +277,16 @@ static void pldm_rx_handler(struct k_work *item)
 			LOG_WRN("Unsupported sensor ID requested in GetSensorReading: %d", sensor_id);
 			return;
 		}
+
+		rc = read_temperature(dev, &value);
+		if (rc < 0) {
+			LOG_ERR("Error reading temperature sensor: %d", rc);
+			present_state = PLDM_SENSOR_UNKNOWN;
+		}
+
+		LOG_INF("Read temperature sensor, value %f", sensor_value_to_double(&value));
+		reading = sensor_value_to_deci(&value);
+		LOG_INF("Converted temperature reading to deci-degrees: %d", reading);
 
 		rc = encode_get_sensor_reading_resp(hdr_info.instance, PLDM_SUCCESS, sensor_data_size, sensor_operation_state,
 						 sensor_event_message_enable, present_state,

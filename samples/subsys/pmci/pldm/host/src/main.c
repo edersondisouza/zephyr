@@ -319,6 +319,16 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 			comp_code, sensor_data_size, sensor_operation_state,
 			sensor_event_message_enable, present_state, previous_state, event_state,
 			reading);
+
+		if (present_state != PLDM_SENSOR_NORMAL) {
+			LOG_WRN("Sensor is in non-normal present state %d", present_state);
+			return;
+		}
+
+		LOG_INF("Sensor reading is %.2f degrees %s",
+				reading * pow(10, sensor_pdr.unit_modifier),
+				sensor_pdr.base_unit == PLDM_SENSOR_UNIT_DEGRESS_C ? "C" : "F");
+
 	} else {
 		LOG_WRN("unhandled message command %d and type %d", hdr_info.command,
 			hdr_info.msg_type);
