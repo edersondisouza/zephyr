@@ -235,15 +235,13 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 		LOG_INF("get types response, completion code %d", comp_code);
 		LOG_HEXDUMP_INF(types, sizeof(types), "types supported");
 		print_supported_types((bitfield8_t *)types);
-	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS &&
-		   hdr_info.msg_type == PLDM_RESPONSE) {
+	} else if (hdr_info.command == PLDM_GET_PLDM_COMMANDS && hdr_info.msg_type == PLDM_RESPONSE) {
 		decode_get_commands_resp(msg, msg_len - sizeof(struct pldm_msg_hdr), &comp_code,
 					 (bitfield8_t *)commands);
 		LOG_INF("get commands response, completion code %d", comp_code);
 		LOG_HEXDUMP_INF(commands, sizeof(commands), "commands supported");
 		print_supported_commands((bitfield8_t *)commands);
-	} else if (hdr_info.command == PLDM_GET_PLDM_VERSION &&
-		   hdr_info.msg_type == PLDM_RESPONSE) {
+	} else if (hdr_info.command == PLDM_GET_PLDM_VERSION && hdr_info.msg_type == PLDM_RESPONSE) {
 		/* ignored, we only accept the first version response... */
 		uint32_t next_transfer_handle;
 		/* ignored */
@@ -254,8 +252,7 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 
 		LOG_INF("get version response, completion code %d, version %d.%d", comp_code,
 			version.major, version.minor);
-	} else if (hdr_info.command == PLDM_GET_PDR &&
-		   hdr_info.msg_type == PLDM_RESPONSE) {
+	} else if (hdr_info.command == PLDM_GET_PDR && hdr_info.msg_type == PLDM_RESPONSE) {
 		uint32_t next_record_handle;
 		uint32_t next_data_transfer_handle;
 		uint8_t transfer_flag;
@@ -281,7 +278,7 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 			LOG_WRN("Received PDR record with insufficient data length %d, expected at least %zu",
 				resp_cnt, sizeof(struct pldm_compact_numeric_sensor_pdr));
 		} else {
-			struct pldm_compact_numeric_sensor_pdr *sensor_pdr =
+			struct pldm_compact_numeric_sensor_pdr *compact_sensor_pdr =
 				(struct pldm_compact_numeric_sensor_pdr *)record_data;
 
 			LOG_INF("Parsed Compact Numeric Sensor PDR: terminus handle %d, sensor id %d, entity "
@@ -289,18 +286,39 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 				"base unit %d, unit modifier %d, occurrence rate %d, range field support "
 				"%d, warning high %d, warning low %d, critical high %d, critical low %d, "
 				"fatal high %d, fatal low %d, sensor name %.*s",
-				sensor_pdr->terminus_handle, sensor_pdr->sensor_id,
-				sensor_pdr->entity_type, sensor_pdr->entity_instance,
-				sensor_pdr->container_id, sensor_pdr->sensor_name_length,
-				sensor_pdr->base_unit, sensor_pdr->unit_modifier,
-				sensor_pdr->occurrence_rate,
-				sensor_pdr->range_field_support.byte,
-				sensor_pdr->warning_high, sensor_pdr->warning_low,
-				sensor_pdr->critical_high, sensor_pdr->critical_low,
-				sensor_pdr->fatal_high, sensor_pdr->fatal_low,
-				sensor_pdr->sensor_name_length, sensor_pdr->sensor_name);
-		}
+				compact_sensor_pdr->terminus_handle, compact_sensor_pdr->sensor_id,
+				compact_sensor_pdr->entity_type, compact_sensor_pdr->entity_instance,
+				compact_sensor_pdr->container_id, compact_sensor_pdr->sensor_name_length,
+				compact_sensor_pdr->base_unit, compact_sensor_pdr->unit_modifier,
+				compact_sensor_pdr->occurrence_rate,
+				compact_sensor_pdr->range_field_support.byte,
+				compact_sensor_pdr->warning_high, compact_sensor_pdr->warning_low,
+				compact_sensor_pdr->critical_high, compact_sensor_pdr->critical_low,
+				compact_sensor_pdr->fatal_high, compact_sensor_pdr->fatal_low,
+				compact_sensor_pdr->sensor_name_length, compact_sensor_pdr->sensor_name);
 
+			sensor_pdr = *compact_sensor_pdr;
+		}
+	} else if (hdr_info.command == PLDM_GET_SENSOR_READING && hdr_info.msg_type == PLDM_RESPONSE) {
+		uint8_t sensor_data_size;
+		uint8_t sensor_operation_state;
+		uint8_t sensor_event_message_enable;
+		uint8_t present_state;
+		uint8_t previous_state;
+		uint8_t event_state;
+		int32_t reading;
+
+		decode_get_sensor_reading_resp(msg, msg_len - sizeof(struct pldm_msg_hdr), &comp_code,
+					      &sensor_data_size, &sensor_operation_state,
+					      &sensor_event_message_enable, &present_state,
+					      &previous_state, &event_state, &reading);
+
+		LOG_INF("get sensor reading response, completion code %d, sensor data size %d, "
+			"sensor operation state %d, sensor event message enable %d, present state %d, "
+			"previous state %d, event state %d, reading %d",
+			comp_code, sensor_data_size, sensor_operation_state,
+			sensor_event_message_enable, present_state, previous_state, event_state,
+			reading);
 	} else {
 		LOG_WRN("unhandled message command %d and type %d", hdr_info.command,
 			hdr_info.msg_type);
@@ -516,6 +534,31 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 			}
 		}
 
+		/* If first PDR is a temperature sensor, get the reading */
+		if (sensor_pdr.base_unit == PLDM_SENSOR_UNIT_DEGRESS_C ||
+		    sensor_pdr.base_unit == PLDM_SENSOR_UNIT_DEGRESS_F) {
+			uint8_t get_sensor_reading_request_size =
+				PLDM_MSG_SIZE(PLDM_GET_SENSOR_READING_REQ_BYTES) + 1;
+			bool8_t rearm = false;
+
+			encode_get_sensor_reading_req(instance, sensor_pdr.sensor_id, rearm, msg);
+			instance++;
+
+			LOG_HEXDUMP_INF(mctp_msg, get_sensor_reading_request_size,
+					 "pldm get_sensor_reading_request");
+			rc = mctp_message_tx(mctp_ctx, eid, false, 0, mctp_msg,
+						     get_sensor_reading_request_size);
+			if (rc != 0) {
+				LOG_WRN("Failed to send message, errno %d\n", rc);
+				return;
+			} else {
+				rc = k_sem_take(&mctp_rx, K_MSEC(1000));
+				if (rc == -EAGAIN) {
+					LOG_WRN("Timeout waiting for get sensor reading response");
+					return;
+				}
+			}
+		}
 	}
 }
 

@@ -195,6 +195,9 @@ static void pldm_rx_handler(struct k_work *item)
 		__ASSERT(rc == 0, "Sending response to GetCommands should succeed");
 	} else if (hdr_info.command == PLDM_GET_PDR && hdr_info.msg_type == PLDM_REQUEST) {
 		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_PDR_MIN_RESP_BYTES + PLDM_PDR_NUMERIC_SENSOR_PDR_MIN_LENGTH) + 1];
+
+		// TODO decode request and only reply if asking for the first
+
 		/* No encode on libpldm for the PDR itself, only the common part, so do it manually =/ */
 		struct pldm_compact_numeric_sensor_pdr sensor_pdr = {
 			.hdr = {
@@ -234,6 +237,41 @@ static void pldm_rx_handler(struct k_work *item)
 		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
 				     sizeof(resp_msg_buf));
 		__ASSERT(rc == 0, "Sending response to GetPDR should succeed");
+	} else if (hdr_info.command == PLDM_GET_SENSOR_READING && hdr_info.msg_type == PLDM_REQUEST) {
+		/* There's already one byte for the reading, so only need to add sizeof(int32_t) - 1 */
+		uint8_t resp_msg_buf[PLDM_MSG_SIZE(PLDM_GET_SENSOR_READING_MIN_RESP_BYTES) + (sizeof(int32_t) - 1) + 1];
+		uint16_t sensor_id;
+		bool8_t rearm;
+		uint8_t sensor_data_size = PLDM_SENSOR_DATA_SIZE_SINT32;
+		uint8_t sensor_operation_state = PLDM_SENSOR_ENABLED;
+		uint8_t sensor_event_message_enable = PLDM_NO_EVENT_GENERATION;
+		uint8_t present_state = PLDM_SENSOR_NORMAL;
+		uint8_t previous_state = PLDM_SENSOR_UNKNOWN;
+		uint8_t event_state = PLDM_SENSOR_NORMAL;
+		int32_t reading = 42; // TODO get from a real temperature sensor!
+
+		rc = decode_get_sensor_reading_req(msg, msg_len, &sensor_id, &rearm);
+		__ASSERT(rc == PLDM_SUCCESS, "Decoding GetSensorReading request should succeed");
+
+		if (sensor_id != 1) {
+			LOG_WRN("Unsupported sensor ID requested in GetSensorReading: %d", sensor_id);
+			return;
+		}
+
+		rc = encode_get_sensor_reading_resp(hdr_info.instance, PLDM_SUCCESS, sensor_data_size, sensor_operation_state,
+						 sensor_event_message_enable, present_state,
+						 previous_state, event_state, (const uint8_t *) &reading,
+						 (struct pldm_msg *)&resp_msg_buf[1],
+						 PLDM_GET_SENSOR_READING_MIN_RESP_BYTES + (sizeof(int32_t) - 1));
+		__ASSERT(rc == PLDM_SUCCESS, "Encoding pldm response should succeed");
+
+		resp_msg_buf[0] = PLDM_MCTP_MESSAGE_TYPE;
+
+		rc = mctp_message_tx(mctp_ctx, src_eid, false, 0, resp_msg_buf,
+				     sizeof(resp_msg_buf));
+		__ASSERT(rc == 0, "Sending response to GetSensorReading should succeed");
+
+		LOG_HEXDUMP_INF(resp_msg_buf, sizeof(resp_msg_buf), "GetSensorReading response");
 	} else {
 		LOG_WRN("Unhandled pldm message, command %d, type %d", hdr_info.command, hdr_info.msg_type);
 	}
