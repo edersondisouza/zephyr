@@ -34,6 +34,8 @@ LOG_MODULE_REGISTER(pldm_endpoint);
 /* Remote MCTP Endpoint ID that we request from to */
 #define REMOTE_EID 20
 
+#define SENSOR_ID 2
+
 #define MCTP_INTEGRITY_CHECK   0x80
 #define MCTP_MESSAGE_TYPE_MASK 0x7F
 
@@ -226,7 +228,7 @@ static void pldm_rx_handler(struct k_work *item)
 				.length = sys_cpu_to_le16(sizeof(struct pldm_compact_numeric_sensor_pdr)),
 			},
 			.terminus_handle = sys_cpu_to_le16(LOCAL_TID),
-			.sensor_id = sys_cpu_to_le16(1),
+			.sensor_id = sys_cpu_to_le16(SENSOR_ID),
 			.entity_type = sys_cpu_to_le16(PLDM_ENTITY_TERMINUS | (1 << 15)),
 			.entity_instance = sys_cpu_to_le16(1),
 			.container_id = 0,
@@ -273,7 +275,7 @@ static void pldm_rx_handler(struct k_work *item)
 		rc = decode_get_sensor_reading_req(msg, msg_len, &sensor_id, &rearm);
 		__ASSERT(rc == PLDM_SUCCESS, "Decoding GetSensorReading request should succeed");
 
-		if (sensor_id != 1) {
+		if (sensor_id != SENSOR_ID) {
 			LOG_WRN("Unsupported sensor ID requested in GetSensorReading: %d", sensor_id);
 			return;
 		}

@@ -6,3 +6,13 @@
 };
 
 arduino_serial: &uart2 {};
+
+/ {
+	mctp_i2c: mctp_i2c {
+		compatible = "zephyr,mctp-i2c-gpio-controller";
+		i2c = <&i2c0_0>;
+		endpoint-ids = <11>;
+		endpoint-addrs = <70>;
+		endpoint-gpios = <&gpio4 3 GPIO_ACTIVE_HIGH>;
+	};
+};

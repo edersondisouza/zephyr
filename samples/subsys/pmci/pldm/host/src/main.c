@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <unistd.h>
+#include <math.h>
 #include <zephyr/types.h>
 #include <zephyr/kernel.h>
 #include <libpldm/base.h>
@@ -311,7 +311,7 @@ static void pldm_rx_handler(uint8_t src_eid, void *data, void *msg, size_t msg_l
 		decode_get_sensor_reading_resp(msg, msg_len - sizeof(struct pldm_msg_hdr), &comp_code,
 					      &sensor_data_size, &sensor_operation_state,
 					      &sensor_event_message_enable, &present_state,
-					      &previous_state, &event_state, &reading);
+					      &previous_state, &event_state, (uint8_t *)&reading);
 
 		LOG_INF("get sensor reading response, completion code %d, sensor data size %d, "
 			"sensor operation state %d, sensor event message enable %d, present state %d, "
@@ -412,10 +412,10 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 {
 	LOG_INF("Starting PLDM discovery on MCTP EID %d", eid);
 	/* TODO implement discovery */
-	int i, j, rc;
+	int i, rc;
 
 	/* PLDM message is after the MCTP message type byte */
-	struct pldm_msg *msg = &mctp_msg[1];
+	struct pldm_msg *msg = (struct pldm_msg *)&mctp_msg[1];
 	uint32_t instance = 0;
 
 	/* GetTID request/response */
@@ -574,7 +574,7 @@ void pdlm_discovery(struct mctp *mctp_ctx, uint8_t eid)
 
 int main(void)
 {
-	int rc, i;
+	int i;
 
 	LOG_INF("PLDM Host EID:%d on %s\n", LOCAL_EID, CONFIG_BOARD_TARGET);
 
