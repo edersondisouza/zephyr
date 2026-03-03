@@ -6,18 +6,19 @@
 
 #include <freq.h>
 
+mctp_serial: &arduino_serial {};
 / {
 	aliases {
 		ambient-temp0 = &p3t1755;
 	};
 
-	mctp_i2c: mctp_i2c {
-		compatible = "zephyr,mctp-i2c-gpio-target";
-		i2c = <&flexcomm2_lpi2c2>;
-		i2c-addr = <70>;
-		endpoint-id = <12>;
-		endpoint-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
-	};
+//	mctp_i2c: mctp_i2c {
+//		compatible = "zephyr,mctp-i2c-gpio-target";
+//		i2c = <&flexcomm2_lpi2c2>;
+//		i2c-addr = <70>;
+//		endpoint-id = <12>;
+//		endpoint-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
+//	};
 };
 
 &i3c1 {

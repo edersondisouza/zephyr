@@ -1,4 +1,4 @@
-//mctp_serial: &arduino_serial {};
+mctp_serial: &arduino_serial {};
 
 &flexcomm2 {
 	status = "okay";
