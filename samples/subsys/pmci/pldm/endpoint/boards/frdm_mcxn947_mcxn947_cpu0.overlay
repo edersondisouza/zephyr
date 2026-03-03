@@ -15,7 +15,7 @@
 		compatible = "zephyr,mctp-i2c-gpio-target";
 		i2c = <&flexcomm2_lpi2c2>;
 		i2c-addr = <70>;
-		endpoint-id = <11>;
+		endpoint-id = <12>;
 		endpoint-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
 	};
 };

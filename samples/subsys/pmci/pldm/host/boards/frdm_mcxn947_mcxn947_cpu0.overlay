@@ -1,8 +1,4 @@
-mctp_serial: &arduino_serial {};
-
-&gpio5 {
-	status = "okay";
-};
+//mctp_serial: &arduino_serial {};
 
 &flexcomm2 {
 	status = "okay";
@@ -17,8 +13,8 @@ mctp_serial: &arduino_serial {};
 	mctp_i2c: mctp_i2c {
 		compatible = "zephyr,mctp-i2c-gpio-controller";
 		i2c = <&flexcomm2_lpi2c2>;
-		endpoint-ids = <11>, <12>;
-		endpoint-addrs = <70>, <71>;
-		endpoint-gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>;
+		endpoint-ids = <12>;
+		endpoint-addrs = <70>;
+		endpoint-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
 	};
 };
