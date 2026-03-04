@@ -143,6 +143,11 @@ void log_commands(enum pldm_supported_types type, bitfield8_t *commands)
 		}
 	} else {
 		LOG_INF(" - (command names not logged for this type)");
+		for (i = 0; i < 256; i++) {
+			if (is_bit_set(commands, i)) {
+				LOG_INF(" - Command number 0x%0x", i);
+			}
+		}
 	}
 }
 
