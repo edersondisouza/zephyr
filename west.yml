@@ -306,6 +306,10 @@ manifest:
       path: modules/hal/libmetal
       groups:
         - hal
+    - name: libpldm
+      revision: 4c216a534d4a846c53a0c2c0f8d86620be261e1b
+      url: git@github.com:intel-innersource/os.rtos.zephyr.modules.libpldm.git
+      path: modules/lib/libpldm
     - name: libsbc
       revision: 8e1beda02acb8972e29e6edbb423f7cafe16e445
       path: modules/lib/libsbc
