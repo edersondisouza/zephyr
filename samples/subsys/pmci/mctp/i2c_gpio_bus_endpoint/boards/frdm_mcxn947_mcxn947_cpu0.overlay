@@ -29,6 +29,6 @@
 		i2c = <&flexcomm2_lpi2c2>;
 		i2c-addr = <70>;
 		endpoint-id = <11>;
-		endpoint-gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+		endpoint-gpios = <&gpio0 10 GPIO_ACTIVE_HIGH>;
 	};
 };
