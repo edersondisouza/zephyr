@@ -13,6 +13,13 @@ Kit). It is composed of one Zephyr application, which provides APIs for the
 extensions that it loads. The provided API is a simple publish/subscribe system,
 based on :ref:`Zbus <zbus>`, which extensions use to communicate with each other.
 
+This sample was modified from the original on upstream Zephyr to use Zig for the
+extensions ``k-ext1`` (that runs on kernel space) and ``ext1`` (that runs on user
+space). Their builds is sligtly different, but one can get an idea of how they work
+from the ``build.sh`` files inside the ``zigbuild`` directory in each. Or, one can
+check https://uncollected-garbage.me/zig-zephyr-part-i for more info (note that
+this is the first post in a series exploring Zig and Zephyr extensions).
+
 The application is composed of a subscriber thread, which listens for events
 published and republishes them via Zbus to the extensions that are
 subscribers. There are four extensions, which are loaded by the application and
@@ -81,13 +88,12 @@ extensions to find the Zephyr SDK, so you need to ensure it's properly set:
 
     export ZEPHYR_SDK_INSTALL_DIR=</path/to/zephyr-sdk>
 
-To build the extensions, in the ``ext1``, ``ext2``, ``ext3`` and ``kext1``
-directories:
+To build the extensions, in the ``edk`` directory, just use the ``build.sh``
+script, which takes care of building the Zig extensions too:
 
 .. code-block:: console
 
-    cmake -B build
-    make -C build
+   ./build.sh
 
 Alternatively, you can set the ``LLEXT_EDK_INSTALL_DIR`` directly in the
 CMake invocation:
