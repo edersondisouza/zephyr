@@ -1,3 +1,5 @@
+const std = @import("std");
+
 inline fn Z_TIMEOUT_TICKS_INIT(comptime ticks: c_int) k_timeout_t {
     return k_timeout_t{ .ticks = ticks };
 }
@@ -231,4 +233,97 @@ pub fn receive(channel: Channels, data: ?*anyopaque, data_len: usize) i32 {
 
     compiler_barrier();
     return z_impl_receive(channel, data, data_len);
+}
+
+pub inline fn DT_ALIAS(comptime alias: []const u8) []const u8 {
+    return @field(@This(), "DT_N_ALIAS_" ++ alias);
+}
+
+pub inline fn DT_PHANDLE_BY_IDX(comptime node_id: []const u8, comptime prop: []const u8, comptime idx: u32) []const u8 {
+    return @field(@This(), std.fmt.comptimePrint("{s}_P_{s}_IDX_{d}_PH", .{node_id, prop, idx}));
+}
+
+pub inline fn DT_PHA_BY_IDX(comptime T: type, comptime node_id: []const u8, comptime pha: []const u8, comptime idx: u32, comptime cell: []const u8) T {
+    return @field(@This(), std.fmt.comptimePrint("{s}_P_{s}_IDX_{d}_VAL_{s}", .{node_id, pha, idx, cell}));
+}
+
+pub inline fn DT_PHA_BY_IDX_OR(comptime T: type, comptime node_id: []const u8, comptime pha: []const u8, comptime idx: u32, comptime cell: []const u8, comptime default: T) T {
+    return DT_PROP_OR(T, node_id, std.fmt.comptimePrint("{s}_IDX_{d}_VAL_{s}", .{pha, idx, cell}), default);
+}
+
+pub inline fn DT_GPIO_PIN_BY_IDX(comptime node_id: []const u8, comptime pha: []const u8, comptime idx: u32) u5 {
+    return DT_PHA_BY_IDX(u5, node_id, pha, idx, "pin");
+}
+
+pub inline fn DT_PROP(comptime T: type, comptime node_id: []const u8, comptime prop: []const u8) T {
+    return @field(@This(), node_id ++ "_P_" ++ prop);
+}
+
+pub inline fn DT_NODE_HAS_PROP(comptime node_id: []const u8, comptime prop: []const u8) bool {
+    return @hasField(@This(), node_id ++ "_P_" ++ prop ++ "_EXISTS");
+}
+
+pub inline fn DT_PROP_OR(comptime T: type, comptime node_id: []const u8, comptime prop: []const u8, comptime default: T) T {
+    return if (DT_NODE_HAS_PROP(node_id, prop)) DT_PROP(T, node_id, prop) else default;
+}
+
+pub inline fn DEVICE_NAME_GET(comptime dev_id: []const u8) []const u8 {
+    return "__device_" ++ dev_id;
+}
+
+pub inline fn DEVICE_DT_GET(comptime dev_id: []const u8) *const struct_device {
+    return &@field(@This(), DEVICE_DT_NAME_GET(dev_id));
+}
+
+pub inline fn DT_DEP_ORD(comptime node_id: []const u8) u5 {
+    return @field(@This(), node_id ++ "_ORD");
+}
+
+pub inline fn Z_DEVICE_DT_DEP_ORD(comptime node_id: []const u8) []const u8 {
+    return std.fmt.comptimePrint("dts_ord_{d}", .{DT_DEP_ORD(node_id)});
+}
+
+pub inline fn DT_GPIO_FLAGS_BY_IDX(comptime node_id: []const u8, comptime pha: []const u8, comptime idx: u32) u5 {
+    return DT_PHA_BY_IDX_OR(u5, node_id, pha, idx, "flags", 0);
+}
+
+pub inline fn GPIO_DT_SPEC_GET_BY_IDX(comptime node_id: []const u8, comptime prop: []const u8, comptime idx: u32) gpio_dt_spec  {
+    return .{
+        .port = DEVICE_DT_GET(DT_GPIO_CTLR_BY_IDX(node_id, prop, idx)),
+        .pin = DT_GPIO_PIN_BY_IDX(node_id, prop, idx),
+        .dt_flags = DT_GPIO_FLAGS_BY_IDX(node_id, prop, idx),
+    };
+}
+
+pub fn gpio_pin_configure(port: *const struct_device, pin: gpio_pin_t, flags: gpio_flags_t) i32 {
+    if (comptime CONFIG_USERSPACE == 1) {
+        if (z_syscall_trap()) {
+            return @bitCast(arch_syscall_invoke3(@intFromPtr(port), pin, flags, K_SYSCALL_GPIO_PIN_CONFIGURE));
+        }
+    }
+
+    compiler_barrier();
+    return z_impl_gpio_pin_configure(port, pin, flags);
+}
+
+pub fn gpio_port_toggle_bits(port: *const struct_device, pins: gpio_port_pins_t) i32 {
+    if (comptime CONFIG_USERSPACE == 1) {
+        if (z_syscall_trap()) {
+            return @bitCast(arch_syscall_invoke2(@intFromPtr(port), pins, K_SYSCALL_GPIO_PORT_TOGGLE_BITS));
+        }
+    }
+
+    compiler_barrier();
+    return z_impl_gpio_port_toggle_bits(port, pins);
+}
+
+pub fn device_is_ready(dev: *const struct_device) bool {
+    if (comptime CONFIG_USERSPACE == 1) {
+        if (z_syscall_trap()) {
+            return arch_syscall_invoke1(@intFromPtr(dev), K_SYSCALL_DEVICE_IS_READY) != 0;
+        }
+    }
+
+    compiler_barrier();
+    return z_impl_device_is_ready(dev);
 }

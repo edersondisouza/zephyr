@@ -11,6 +11,9 @@ generate_import() {
 
     zig translate-c -target thumb-freestanding-eabi $LLEXT_ALL_INCLUDE_CFLAGS -fno-unwind-tables -DCPU_MCXN947VDF_cm33_core0 -mcpu=cortex_m33+long_calls $IMPORT_H > $TRANSLATED_FILE
 
+    sed -ri 's|(DT_N_ALIAS_\w+ = )@compileError..unable.to.translate.macro..undefined.identifier..(\w+).*$|\1"\2";|g' $TRANSLATED_FILE
+    sed -ri 's|(DT_N_\w+_PH = )@compileError..unable.to.translate.macro..undefined.identifier..(\w+).*$|\1"\2";|g' $TRANSLATED_FILE
+
     DUPLICATE_FUNCTIONS=$(grep -Pro "(?<=pub fn )(\w+)" "$MANUAL_IMPORTS")
 
     for function in $DUPLICATE_FUNCTIONS ; do
@@ -21,6 +24,12 @@ generate_import() {
 
     for macro in $DUPLICATE_MACROS ; do
         sed -ri "s|pub const $macro\>.*$||g" $TRANSLATED_FILE
+    done
+
+    DUPLICATE_INLINE_FUNCTIONS=$(grep -Pro "(?<=pub inline fn )(\w+)" "$MANUAL_IMPORTS")
+
+    for function in $DUPLICATE_INLINE_FUNCTIONS ; do
+        sed -ri "/pub inline fn $function\>.*$/,/^}/d" $TRANSLATED_FILE
     done
 
     cat $MANUAL_IMPORTS >> $TRANSLATED_FILE

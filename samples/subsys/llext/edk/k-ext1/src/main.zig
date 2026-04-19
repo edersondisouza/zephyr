@@ -8,6 +8,8 @@ pub const K_NO_WAIT = c.k_timeout_t{};
 
 var my_sem: *c.k_sem = undefined;
 
+const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led0"), "gpios");
+
 pub fn tick_sub(_: ?*anyopaque, _: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
     const tick_evt = c.k_object_alloc(c.K_OBJ_EVENT, c.k_event) catch {
         c.printk("[zig][k-ext1]k_object_alloc failed!\n");
@@ -50,6 +52,17 @@ pub fn start() callconv(.c) c_int {
         return 5;
     };
 
+    if (!c.gpio_is_ready_dt(&led)) {
+        c.printk("[zig][k-ext1]LED is not ready!\n");
+        return 6;
+    }
+
+    var ret = c.gpio_pin_configure_dt(&led, c.GPIO_OUTPUT_ACTIVE);
+    if (ret < 0) {
+        c.printk("[zig][k-ext1]gpio_pin_configure_dt failed!\n");
+        return 7;
+    }
+
     while (true) {
         var l: usize = undefined;
 
@@ -59,6 +72,12 @@ pub fn start() callconv(.c) c_int {
         c.printk("[zig][k-ext1]Got sem, reading channel\n");
         _ = c.receive(c.CHAN_TICK, &l, @sizeOf(@TypeOf(l)));
         c.printk("[zig][k-ext1]Read val: %ld\n", l);
+
+        c.printk("[zig][k-ext1]Toggling light!\n");
+        ret = c.gpio_pin_toggle_dt(&led);
+        if (ret < 0) {
+            c.printk("[zig][k-ext1]Failed to toggle light!\n");
+        }
     }
 
     return 0;
