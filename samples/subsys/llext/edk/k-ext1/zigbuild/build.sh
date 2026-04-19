@@ -14,13 +14,13 @@ generate_import() {
     DUPLICATE_FUNCTIONS=$(grep -Pro "(?<=pub fn )(\w+)" "$MANUAL_IMPORTS")
 
     for function in $DUPLICATE_FUNCTIONS ; do
-        sed -ri "s|pub extern fn $function.*$||g" $TRANSLATED_FILE
+        sed -ri "s|pub extern fn $function\>.*$||g" $TRANSLATED_FILE
     done
 
     DUPLICATE_MACROS=$(grep -Pro "(?<=inline fn )(\w+)" "$MANUAL_IMPORTS")
 
     for macro in $DUPLICATE_MACROS ; do
-        sed -ri "s|pub const $macro.*$||g" $TRANSLATED_FILE
+        sed -ri "s|pub const $macro\>.*$||g" $TRANSLATED_FILE
     done
 
     cat $MANUAL_IMPORTS >> $TRANSLATED_FILE
