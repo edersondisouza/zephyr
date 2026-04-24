@@ -139,6 +139,11 @@ void run_extension_on_thread(void *ext_inc, size_t ext_len,
 
 	k_thread_heap_assign(thread, heap);
 
+	/* Allow threads to access the LEDs */
+	k_object_access_grant(DEVICE_DT_GET(DT_GPIO_CTLR(DT_ALIAS(led0), gpios)), thread);
+	k_object_access_grant(DEVICE_DT_GET(DT_GPIO_CTLR(DT_ALIAS(led1), gpios)), thread);
+	k_object_access_grant(DEVICE_DT_GET(DT_GPIO_CTLR(DT_ALIAS(led2), gpios)), thread);
+
 	extension_threads[max_extension_thread_idx].thread = thread;
 	max_extension_thread_idx++;
 

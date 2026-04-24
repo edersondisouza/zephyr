@@ -1,5 +1,7 @@
 const c = @import("cimport.zig");
 
+const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led1"), "gpios");
+
 pub fn start() callconv(.c) c_int {
     const tick_evt: *c.k_event = c.k_object_alloc(c.K_OBJ_EVENT, c.k_event) catch {
         c.printk("[zig][ext1]k_object_alloc failed!\n");
@@ -10,6 +12,17 @@ pub fn start() callconv(.c) c_int {
 
     _ = c.register_subscriber(c.CHAN_TICK, tick_evt);
 
+    if (!c.gpio_is_ready_dt(&led)) {
+        c.printk("[zig][ext1]LED is not ready!\n");
+        return 2;
+    }
+
+    var ret = c.gpio_pin_configure_dt(&led, c.GPIO_OUTPUT_ACTIVE);
+    if (ret < 0) {
+        c.printk("[zig][ext1]gpio_pin_configure_dt failed!\n");
+        return 3;
+    }
+
     while (true) {
         var l: usize = undefined;
 
@@ -19,6 +32,14 @@ pub fn start() callconv(.c) c_int {
         c.printk("[zig][ext1]Got event, reading channel\n");
         _ = c.receive(c.CHAN_TICK, &l, @sizeOf(@TypeOf(l)));
         c.printk("[zig][ext1]Read val: %ld\n", l);
+
+        if (l % 2 == 1) {
+            c.printk("[zig][ext1]Toggling light on odd value!\n");
+            ret = c.gpio_pin_toggle_dt(&led);
+            if (ret < 0) {
+                c.printk("[zig][ext1]Failed to toggle light!\n");
+            }
+        }
     }
 
     return 0;
