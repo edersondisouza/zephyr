@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 inline fn Z_TIMEOUT_TICKS_INIT(comptime ticks: c_int) k_timeout_t {
     return k_timeout_t{ .ticks = ticks };
@@ -128,15 +129,45 @@ pub fn k_event_wait(event: *struct_k_event, events: u32, reset: bool, timeout: k
     return z_impl_k_event_wait(event, events, reset, timeout);
 }
 
-pub fn k_sem_init(sem: *struct_k_sem, initial_count: u32, limit: u32) callconv(.c) i32 {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            return @bitCast(arch_syscall_invoke3(@intFromPtr(sem), initial_count, limit, K_SYSCALL_K_SEM_INIT));
-        }
+pub const SUCCESS = 0;
+
+pub const UnexpectedError = error{
+    Unexpected,
+};
+
+pub fn unexpectedErrno(err: i32) UnexpectedError {
+    if (builtin.mode == .Debug) {
+        printk("unexpected errno: %d\n", err);
     }
 
-    compiler_barrier();
-    return z_impl_k_sem_init(sem, initial_count, limit);
+    return error.Unexpected;
+}
+
+pub const SemInitError = error{
+    InvalidLimit,
+    InvalidCount,
+} || UnexpectedError;
+
+pub fn k_sem_init(sem: *struct_k_sem, initial_count: u32, limit: u32) SemInitError!void {
+    if (limit == 0) return error.InvalidLimit;
+    if (initial_count > limit) return error.InvalidCount;
+
+    const ret: i32 = blk: {
+        if (comptime CONFIG_USERSPACE == 1) {
+            if (z_syscall_trap()) {
+                break :blk @bitCast(arch_syscall_invoke3(@intFromPtr(sem), initial_count, limit, K_SYSCALL_K_SEM_INIT));
+            }
+        }
+
+        compiler_barrier();
+        break :blk z_impl_k_sem_init(sem, initial_count, limit);
+    };
+
+    switch (ret) {
+        SUCCESS => return,
+        -EINVAL => unreachable,
+        else => |err| return unexpectedErrno(err),
+    }
 }
 
 pub fn k_sem_give(sem: *struct_k_sem) void {
@@ -151,19 +182,33 @@ pub fn k_sem_give(sem: *struct_k_sem) void {
     z_impl_k_sem_give(sem);
 }
 
-pub fn k_sem_take(sem: *struct_k_sem, timeout: k_timeout_t) i32 {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            const ticks: u64 = @bitCast(timeout.ticks);
-            const hi: u32 = @intCast(ticks >> 32);
-            const lo: u32 = @intCast(ticks & 0xffffffff);
+pub const SemTakeError = error{
+    Busy,
+    TimedOutOrReset
+} || UnexpectedError;
 
-            return @bitCast(arch_syscall_invoke3(@intFromPtr(sem), hi, lo, K_SYSCALL_K_SEM_GIVE));
+pub fn k_sem_take(sem: *struct_k_sem, timeout: k_timeout_t) SemTakeError!void {
+    const ret: i32 = blk: {
+        if (comptime CONFIG_USERSPACE == 1) {
+            if (z_syscall_trap()) {
+                const ticks: u64 = @bitCast(timeout.ticks);
+                const hi: u32 = @intCast(ticks >> 32);
+                const lo: u32 = @intCast(ticks & 0xffffffff);
+
+                break :blk @bitCast(arch_syscall_invoke3(@intFromPtr(sem), hi, lo, K_SYSCALL_K_SEM_GIVE));
+            }
         }
-    }
 
-    compiler_barrier();
-    return z_impl_k_sem_take(sem, timeout);
+        compiler_barrier();
+        break :blk z_impl_k_sem_take(sem, timeout);
+    };
+
+    switch (ret) {
+        SUCCESS => return,
+        -EBUSY => return error.Busy,
+        -EAGAIN => return error.TimedOutOrReset,
+        else => |err| return unexpectedErrno(err),
+    }
 }
 
 pub fn k_thread_stack_alloc(size: usize, flags: i32) !*k_thread_stack_t {
@@ -213,26 +258,64 @@ pub fn k_thread_create(new_thread: *struct_k_thread, stack: *k_thread_stack_t, s
     return if (ret == 0) error.OutOfMemory else @ptrFromInt(ret);
 }
 
-pub fn register_subscriber(channel: Channels, evt: *k_event) i32 {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            return @bitCast(arch_syscall_invoke2(channel, @intFromPtr(evt), K_SYSCALL_REGISTER_SUBSCRIBER));
-        }
-    }
+pub const RegisterSubscriberError = error{
+    InvalidChannel,
+    InvalidSubscriber,
+    TooManySubscribers,
+} || UnexpectedError;
 
-    compiler_barrier();
-    return z_impl_register_subscriber(channel, evt);
+pub fn register_subscriber(channel: Channels, evt: *k_event) RegisterSubscriberError!void {
+    if (channel >= CHAN_LAST) return error.InvalidChannel;
+
+    const ret: i32 = blk: {
+        if (comptime CONFIG_USERSPACE == 1) {
+            if (z_syscall_trap()) {
+                break :blk @bitCast(arch_syscall_invoke2(channel, @intFromPtr(evt), K_SYSCALL_REGISTER_SUBSCRIBER));
+            }
+        }
+
+        compiler_barrier();
+        break :blk z_impl_register_subscriber(channel, evt);
+    };
+
+    switch (ret) {
+        SUCCESS => return,
+        -EINVAL => unreachable,
+        -ENOENT => return error.InvalidSubscriber,
+        -ENOMEM => return error.TooManySubscribers,
+        else => |err| return unexpectedErrno(err),
+    }
 }
 
-pub fn receive(channel: Channels, data: ?*anyopaque, data_len: usize) i32 {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            return @bitCast(arch_syscall_invoke3(channel, @intFromPtr(data), data_len, K_SYSCALL_RECEIVE));
-        }
-    }
+pub const ReceiveError = error{
+    InvalidChannel,
+    ReceivingBufferTooSmall,
+    BusyChannel,
+    TimedOut,
+} || UnexpectedError;
 
-    compiler_barrier();
-    return z_impl_receive(channel, data, data_len);
+pub fn receive(channel: Channels, data: *anyopaque, data_len: usize) ReceiveError!void {
+    if (channel >= CHAN_LAST) return error.InvalidChannel;
+
+    const ret: i32 = blk: {
+        if (comptime CONFIG_USERSPACE == 1) {
+            if (z_syscall_trap()) {
+                break :blk @bitCast(arch_syscall_invoke3(channel, @intFromPtr(data), data_len, K_SYSCALL_RECEIVE));
+            }
+        }
+
+        compiler_barrier();
+        break :blk z_impl_receive(channel, data, data_len);
+    };
+
+    switch (ret) {
+        SUCCESS => return,
+        -EINVAL => return error.ReceivingBufferTooSmall,
+        -EBUSY => return error.BusyChannel,
+        -EAGAIN => return error.TimedOut,
+        -EFAULT => unreachable,
+        else => |err| return unexpectedErrno(err),
+    }
 }
 
 pub inline fn DT_ALIAS(comptime alias: []const u8) []const u8 {
@@ -295,26 +378,70 @@ pub inline fn GPIO_DT_SPEC_GET_BY_IDX(comptime node_id: []const u8, comptime pro
     };
 }
 
-pub fn gpio_pin_configure(port: *const struct_device, pin: gpio_pin_t, flags: gpio_flags_t) i32 {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            return @bitCast(arch_syscall_invoke3(@intFromPtr(port), pin, flags, K_SYSCALL_GPIO_PIN_CONFIGURE));
-        }
-    }
+pub const GPIOPinConfigureError = error{
+    NotSupported,
+    InvalidPin,
+    IOError,
+    WouldBlock,
+} || UnexpectedError;
 
-    compiler_barrier();
-    return z_impl_gpio_pin_configure(port, pin, flags);
+pub fn gpio_pin_configure(port: *const struct_device, pin: gpio_pin_t, flags: gpio_flags_t) GPIOPinConfigureError!void {
+    const ret: i32 = blk: {
+        if (comptime CONFIG_USERSPACE == 1) {
+            if (z_syscall_trap()) {
+                break :blk @bitCast(arch_syscall_invoke3(@intFromPtr(port), pin, flags, K_SYSCALL_GPIO_PIN_CONFIGURE));
+            }
+        }
+
+        compiler_barrier();
+        break :blk z_impl_gpio_pin_configure(port, pin, flags);
+    };
+
+    switch (ret) {
+        SUCCESS => return,
+        -EINVAL => return error.InvalidPin,
+        -ENOTSUP => return error.NotSupported,
+        -EIO => return error.IOError,
+        -EWOULDBLOCK => return error.WouldBlock,
+        else => |err| return unexpectedErrno(err),
+    }
 }
 
-pub fn gpio_port_toggle_bits(port: *const struct_device, pins: gpio_port_pins_t) i32 {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            return @bitCast(arch_syscall_invoke2(@intFromPtr(port), pins, K_SYSCALL_GPIO_PORT_TOGGLE_BITS));
-        }
-    }
+pub fn gpio_pin_configure_dt(spec: *const struct_gpio_dt_spec, extra_flags: gpio_flags_t) GPIOPinConfigureError!void {
+    return gpio_pin_configure(spec.*.port, spec.*.pin, spec.*.dt_flags | extra_flags);
+}
 
-    compiler_barrier();
-    return z_impl_gpio_port_toggle_bits(port, pins);
+pub const GPIOPortToggleBitsError = error{
+    IOError,
+    WouldBlock,
+} || UnexpectedError;
+
+pub fn gpio_port_toggle_bits(port: *const struct_device, pins: gpio_port_pins_t) GPIOPortToggleBitsError!void {
+    const ret: i32 = blk: {
+        if (comptime CONFIG_USERSPACE == 1) {
+            if (z_syscall_trap()) {
+                break :blk @bitCast(arch_syscall_invoke2(@intFromPtr(port), pins, K_SYSCALL_GPIO_PORT_TOGGLE_BITS));
+            }
+        }
+
+        compiler_barrier();
+        break :blk z_impl_gpio_port_toggle_bits(port, pins);
+    };
+
+    switch (ret) {
+        SUCCESS => return,
+        -EIO => return error.IOError,
+        -EWOULDBLOCK => return error.WouldBlock,
+        else => |err| return unexpectedErrno(err),
+    }
+}
+
+pub fn gpio_pin_toggle(port: *const struct_device, pin: gpio_pin_t) GPIOPortToggleBitsError!void {
+    return gpio_port_toggle_bits(port, @as(u32, 1) << @as(u5, @truncate(pin)));
+}
+
+pub fn gpio_pin_toggle_dt(spec: *const struct_gpio_dt_spec) GPIOPortToggleBitsError!void {
+    return gpio_pin_toggle(spec.*.port, spec.*.pin);
 }
 
 pub fn device_is_ready(dev: *const struct_device) bool {

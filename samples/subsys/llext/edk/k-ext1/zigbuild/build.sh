@@ -32,6 +32,12 @@ generate_import() {
         sed -ri "/pub inline fn $function\>.*$/,/^}/d" $TRANSLATED_FILE
     done
 
+    DUPLICATE_TRANSLATED_FUNCTIONS=$(grep -Pro "(?<=pub fn )(\w+)" "$MANUAL_IMPORTS")
+
+    for function in $DUPLICATE_TRANSLATED_FUNCTIONS ; do
+        sed -ri "/pub fn $function\>.*$/,/^}/d" $TRANSLATED_FILE
+    done
+
     cat $MANUAL_IMPORTS >> $TRANSLATED_FILE
 }
 
