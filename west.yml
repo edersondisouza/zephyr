@@ -299,7 +299,8 @@ manifest:
       revision: 48bbd3eacd36e99a57317a0a4867002e0b09e183
       path: modules/lib/liblc3
     - name: libmctp
-      revision: 782a9da666b6e7703b28dee65499a8f1f456f2b5
+      url: git@github.com:edersondisouza/libmctp.git
+      revision: acf11efe6187b862d8a5544248a9c0b38b8b7c0e
       path: modules/lib/libmctp
     - name: libmetal
       revision: 66e084293b2a7ced5a73fbd247deddba8915883a
@@ -307,7 +308,7 @@ manifest:
       groups:
         - hal
     - name: libpldm
-      revision: 4c216a534d4a846c53a0c2c0f8d86620be261e1b
+      revision: 4fd0fe514935a6ce45893cdc426d4b4b2a06cdfb
       url: git@github.com:intel-innersource/os.rtos.zephyr.modules.libpldm.git
       path: modules/lib/libpldm
     - name: libsbc

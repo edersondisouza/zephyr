@@ -390,8 +390,10 @@ int pldm_discovery(struct mctp *mctp_ctx, uint8_t eid, struct pldm_tid_info *out
 
 		case PLDM_DISCOVERY_GET_TID:
 			/* GetPLDMTypes request/response */
+			LOG_DBG("Getting supported PLDM types for TID %d", tid_info.tid);
 			uint8_t get_types_request_size = PLDM_MSG_SIZE(0) + 1;
 
+			LOG_DBG("Getting supported PLDM types for TID %d", tid_info.tid);
 			rc = encode_get_types_req(instance, msg);
 			__ASSERT(rc == 0, "Failed to encode get types request");
 			inc_instance();

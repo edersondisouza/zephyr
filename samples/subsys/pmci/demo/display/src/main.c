@@ -17,8 +17,12 @@
 
 #include <math.h>
 #include <libmctp.h>
+#include <libmctp-cmds.h>
+#include <control.h>
 #include <zephyr/pmci/mctp/mctp_i2c_gpio_target.h>
 #include <zephyr/pmci/mctp/mctp_uart.h>
+
+#include <mctp.h>
 
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 #include <zephyr/logging/log.h>
@@ -34,6 +38,8 @@ MCTP_UART_DT_DEFINE(mctp_endpoint, DEVICE_DT_GET(DT_NODELABEL(mctp_serial)));
 
 #define EC_EID 20
 
+#define MCTP_MESSAGE_TYPE_MASK 0x7F
+
 struct temperature_data {
 	double temperature;
 	bool updated;
@@ -41,18 +47,68 @@ struct temperature_data {
 struct temperature_data temperature;
 bool use_farenheit;
 
+struct message {
+	uintptr_t fifo;
+	size_t len;
+	uint8_t src_eid;
+	bool tag_owner;
+	uint8_t msg_tag;
+	struct mctp_binding *binding;
+	uint8_t data[];
+};
+
+K_FIFO_DEFINE(rx_fifo);
+
+static void rx_message_handler(struct k_work *work)
+{
+	ARG_UNUSED(work);
+
+	while (true) {
+		struct message *rx_msg = k_fifo_get(&rx_fifo, K_NO_WAIT);
+		if (!rx_msg) {
+			break;
+		}
+
+		LOG_DBG("Processing MCTP control message from mctp endpoint %d, len %zu", rx_msg->src_eid, rx_msg->len);
+		LOG_HEXDUMP_DBG(rx_msg->data, rx_msg->len, "MCTP control message");
+
+		mctp_control_handler(rx_msg->binding->bus, rx_msg->src_eid, rx_msg->tag_owner,
+				     rx_msg->msg_tag, rx_msg->data, rx_msg->len);
+
+		free(rx_msg);
+	}
+}
+K_WORK_DEFINE(rx_message_work, rx_message_handler);
+
 static void rx_message(uint8_t eid, bool tag_owner, uint8_t msg_tag, void *data, void *msg,
 		       size_t len)
 {
+
+	uint8_t *msg_buf = (uint8_t *)msg;
+
+	if ((msg_buf[0] & MCTP_MESSAGE_TYPE_MASK) == MCTP_CTRL_HDR_MSG_TYPE) {
+		struct message *rx_msg = malloc(sizeof(struct message) + len);
+
+		if (!rx_msg) {
+			LOG_ERR("Failed to allocate memory for incoming message");
+			return;
+		}
+		rx_msg->len = len;
+		rx_msg->src_eid = eid;
+		rx_msg->tag_owner = tag_owner;
+		rx_msg->msg_tag = msg_tag;
+		rx_msg->binding = data;
+		memcpy(rx_msg->data, msg_buf, len);
+		k_fifo_put(&rx_fifo, rx_msg);
+		k_work_submit(&rx_message_work);
+
+		return;
+	}
 
 	if (eid == EC_EID) {
 		temperature = *(struct temperature_data *)msg;
 		LOG_INF("Controller EID message received: %.2f Up-to-date: %d", temperature.temperature,
 			temperature.updated);
-	} else {
-		LOG_INF("received message \"%s\" from endpoint %d, msg_tag %d, len %zu - "
-			"replying with \"pong\"", (char *)msg, eid,
-			msg_tag, len);
 	}
 }
 
@@ -92,7 +148,9 @@ int main(void)
 	mctp_ctx = mctp_init();
 	__ASSERT_NO_MSG(mctp_ctx != NULL);
 	mctp_register_bus(mctp_ctx, &mctp_endpoint.binding, LOCAL_EID);
-	mctp_set_rx_all(mctp_ctx, rx_message, NULL);
+	/* For some reason, libmctp doesn't add the base type by default */
+	mctp_control_add_type(mctp_ctx, MCTP_MSG_TYPE_NUMBER_MCTP_BASE);
+	mctp_set_rx_all(mctp_ctx, rx_message, &mctp_endpoint.binding);
 #if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(mctp_serial))
 	mctp_uart_start_rx(&mctp_endpoint);
 #endif

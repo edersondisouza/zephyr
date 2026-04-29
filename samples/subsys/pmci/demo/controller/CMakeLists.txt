@@ -3,5 +3,13 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(controller)
 
-target_include_directories(app PRIVATE ../../pldm/common/include)
-target_sources(app PRIVATE src/main.c ../../pldm/common/pldm.c)
+target_include_directories(app PRIVATE
+    ../../pldm/common/include
+    ../../mctp/common/include
+)
+
+target_sources(app PRIVATE
+    src/main.c
+    ../../pldm/common/pldm.c
+    ../../mctp/common/mctp.c
+)

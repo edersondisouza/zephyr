@@ -15,6 +15,7 @@
 #include <zephyr/pmci/mctp/mctp_i3c_controller.h>
 
 #include <pldm.h>
+#include <mctp.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(controller_mctp_endpoint);
@@ -32,6 +33,7 @@ MCTP_I3C_CONTROLLER_DT_DEFINE(mctp_i3c_ctrl, DT_NODELABEL(mctp_i3c));
 
 struct mctp *mctp_ctx_i2c_gpio;
 struct mctp *mctp_ctx_i3c;
+
 
 struct temperature_data {
 	double temperature;
@@ -73,32 +75,61 @@ static void rx_message(uint8_t src_eid, bool tag_owner, uint8_t msg_tag, void *d
 	/* Treat data as a buffer for byte wise access */
 	uint8_t *msg_buf = (uint8_t *)msg;
 
+	LOG_DBG("Received MCTP message from EID %d, len %zu", src_eid, len);
+
 	if (len < 1) {
 		LOG_WRN("MCTP Message should contain a message type and integrity check byte!");
 		return;
 	}
 
-	if ((msg_buf[0] & MCTP_MESSAGE_TYPE_MASK) == PLDM_MCTP_MESSAGE_TYPE) {
-		size_t pldm_msg_len = len - 1;
-		struct message *rx_msg = malloc(sizeof(struct message) + pldm_msg_len);
+	switch (msg_buf[0] & MCTP_MESSAGE_TYPE_MASK) {
+	case PLDM_MCTP_MESSAGE_TYPE: {
+			size_t pldm_msg_len = len - 1;
+			struct message *rx_msg = malloc(sizeof(struct message) + pldm_msg_len);
 
-		if (!rx_msg) {
-			LOG_ERR("Failed to allocate memory for incoming PLDM message");
-			return;
+			if (!rx_msg) {
+				LOG_ERR("Failed to allocate memory for incoming PLDM message");
+				return;
+			}
+
+			rx_msg->len = pldm_msg_len;
+			rx_msg->src_eid = src_eid;
+			memcpy(rx_msg->data, &msg_buf[1], pldm_msg_len);
+			k_fifo_put(&rx_fifo, rx_msg);
+			k_work_submit(&rx_work);
 		}
+		break;
 
-		rx_msg->len = pldm_msg_len;
-		rx_msg->src_eid = src_eid;
-		memcpy(rx_msg->data, &msg_buf[1], pldm_msg_len);
-		k_fifo_put(&rx_fifo, rx_msg);
-		k_work_submit(&rx_work);
+	case MCTP_CTRL_HDR_MSG_TYPE:
+		mctp_response_handler(msg_buf, len);
+		break;
+
+	default:
+		LOG_WRN("Received message with unsupported MCTP message type %d, ignoring",
+			msg_buf[0] & MCTP_MESSAGE_TYPE_MASK);
 	}
 }
 
-bool find_sensor(struct mctp *mctp_ctx, uint8_t eid, struct pldm_compact_numeric_sensor_pdr *found_pdr)
+bool find_sensor(struct mctp *mctp_ctx, uint8_t eid, struct mctp_endpoint_info *endpoint_info,
+		 struct pldm_compact_numeric_sensor_pdr *found_pdr)
 {
 	struct pldm_tid_info tid_info;
-	int rc = pldm_discovery(mctp_ctx, eid, &tid_info);
+	int i, rc;
+
+	/* Ensure sensor endpoint supports PLDM */
+	rc = -ENOTSUP;
+	for (i = 0; i <= endpoint_info->msg_types_len; i++) {
+		if (endpoint_info->msg_types[i].type == MCTP_MSG_TYPE_NUMBER_PLDM_MCTP) {
+			rc = 0;
+			break;
+		}
+	}
+	if (rc != 0) {
+		LOG_ERR("Sensor endpoint does not support PLDM message type, cannot retrieve sensor data");
+		return false;
+	}
+
+	rc= pldm_discovery(mctp_ctx, eid, &tid_info);
 	if (rc != 0) {
 		LOG_ERR("PLDM discovery failed for EID %d, error code: %d", eid, rc);
 		return false;
@@ -166,21 +197,43 @@ int main(void)
 
 	struct pldm_compact_numeric_sensor_pdr sensor_pdr = { };
 	struct mctp *sensor_ctx = NULL;
+	struct mctp_endpoint_info *sensor_einfo = NULL, *display_einfo = NULL,
+				  *alt_sensor_einfo = NULL;
 	uint8_t sensor_eid = 0;
 	int rc;
 
-	mctp_set_alloc_ops(malloc, free, realloc);
-	mctp_ctx_i3c = mctp_init();
-	__ASSERT_NO_MSG(mctp_ctx_i3c != NULL);
 	mctp_ctx_i2c_gpio = mctp_init();
 	__ASSERT_NO_MSG(mctp_ctx_i2c_gpio != NULL);
-	mctp_register_bus(mctp_ctx_i3c, &mctp_i3c_ctrl.binding, LOCAL_EID);
 	mctp_register_bus(mctp_ctx_i2c_gpio, &mctp_i2c_ctrl.binding, LOCAL_EID);
-	mctp_set_rx_all(mctp_ctx_i3c, rx_message, NULL);
 	mctp_set_rx_all(mctp_ctx_i2c_gpio, rx_message, NULL);
+	rc = mctp_static_discovery(mctp_ctx_i2c_gpio, DISPLAY_EID, &display_einfo);
+	if (rc != 0) {
+		LOG_ERR("MCTP static discovery failed for EID %d on I2C GPIO bus, error code: %d", DISPLAY_EID, rc);
+		return 0;
+	}
+	mctp_endpoint_info_log(display_einfo);
 
-	if (!find_sensor(mctp_ctx_i3c, SENSOR_EID, &sensor_pdr)) {
-		if (!find_sensor(mctp_ctx_i2c_gpio, SENSOR_ALTERNATE_EID, &sensor_pdr)) {
+	mctp_ctx_i3c = mctp_init();
+	__ASSERT_NO_MSG(mctp_ctx_i3c != NULL);
+	mctp_register_bus(mctp_ctx_i3c, &mctp_i3c_ctrl.binding, LOCAL_EID);
+	mctp_set_rx_all(mctp_ctx_i3c, rx_message, NULL);
+	rc = mctp_static_discovery(mctp_ctx_i3c, SENSOR_EID, &sensor_einfo);
+	if (rc != 0) {
+		LOG_ERR("MCTP static discovery failed for EID %d on I3C bus, error code: %d", SENSOR_EID, rc);
+		return 0;
+	}
+	mctp_endpoint_info_log(sensor_einfo);
+
+
+	if (!find_sensor(mctp_ctx_i3c, SENSOR_EID, sensor_einfo, &sensor_pdr)) {
+		rc = mctp_static_discovery(mctp_ctx_i2c_gpio, SENSOR_ALTERNATE_EID, &alt_sensor_einfo);
+		if (rc != 0) {
+			LOG_ERR("MCTP static discovery failed for EID %d on I2C GPIO bus, error code: %d",
+				SENSOR_ALTERNATE_EID, rc);
+			return 0;
+		}
+		mctp_endpoint_info_log(sensor_einfo);
+		if (!find_sensor(mctp_ctx_i2c_gpio, SENSOR_ALTERNATE_EID, alt_sensor_einfo, &sensor_pdr)) {
 			LOG_WRN("No valid temperature sensor PDR found on either bus, cannot send data to display");
 			return 0;
 		} else {
@@ -193,6 +246,10 @@ int main(void)
 		sensor_ctx = mctp_ctx_i3c;
 		sensor_eid = SENSOR_EID;
 	}
+
+	mctp_endpoint_info_free(display_einfo);
+	mctp_endpoint_info_free(sensor_einfo);
+	mctp_endpoint_info_free(alt_sensor_einfo);
 
 	while (true) {
 		uint8_t present_state;

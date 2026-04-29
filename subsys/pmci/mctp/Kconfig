@@ -80,6 +80,12 @@ config MCTP_USB
 	help
 	  Build the MCTP USB binding to use MCTP over Zephyr's USB device interface.
 
+config LIBMCTP_CONTROL_HANDLER_ENABLED
+	bool "libmctp Control Handler"
+	depends on MCTP
+	help
+	  Enable the libmctp control handler for MCTP control messages. Application may want to disable it if they want to handle MCTP control messages themselves or intercept them before libmctp's control handler.
+
 module = MCTP
 module-str = MCTP
 source "subsys/logging/Kconfig.template.log_config"
