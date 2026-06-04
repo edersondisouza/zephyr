@@ -195,7 +195,7 @@ pub fn k_sem_take(sem: *struct_k_sem, timeout: k_timeout_t) SemTakeError!void {
                 const hi: u32 = @intCast(ticks >> 32);
                 const lo: u32 = @intCast(ticks & 0xffffffff);
 
-                break :blk @bitCast(arch_syscall_invoke3(@intFromPtr(sem), hi, lo, K_SYSCALL_K_SEM_GIVE));
+                break :blk @bitCast(arch_syscall_invoke3(@intFromPtr(sem), lo, hi, K_SYSCALL_K_SEM_TAKE));
             }
         }
 
