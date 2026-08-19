@@ -118,6 +118,8 @@ struct i3c_stm32_msg {
 	uint32_t msg_type;                /* Either LL_I3C_CONTROLLER_MTYPE_PRIVATE or
 					   * LL_I3C_CONTROLLER_MTYPE_LEGACY_I2C
 					   */
+	bool nack_ok;   /* Caller flagged an address NACK as an expected outcome */
+	bool addr_nack; /* An address NACK was seen during this transfer */
 };
 
 struct i3c_stm32_config {
@@ -247,6 +249,8 @@ static int i3c_stm32_curr_msg_init(const struct device *dev, struct i3c_msg *i3c
 	curr_msg->ctrl_msg_idx = 0;
 	curr_msg->status_msg_idx = 0;
 	curr_msg->xfer_msg_idx = 0;
+	curr_msg->nack_ok = false;
+	curr_msg->addr_nack = false;
 
 	/* I3C private message */
 	if (i2c_msgs == NULL) {
@@ -254,6 +258,17 @@ static int i3c_stm32_curr_msg_init(const struct device *dev, struct i3c_msg *i3c
 		curr_msg->i3c_msg_ptr = i3c_msgs;
 		curr_msg->i3c_msg_ctrl_ptr = i3c_msgs;
 		curr_msg->i3c_msg_status_ptr = i3c_msgs;
+
+		/*
+		 * The whole transfer is aborted on the first NACK, so it is
+		 * enough for any of the messages to allow it.
+		 */
+		for (uint8_t i = 0; i < num_msgs; i++) {
+			if ((i3c_msgs[i].flags & I3C_MSG_NACK_ALLOWED) != 0U) {
+				curr_msg->nack_ok = true;
+				break;
+			}
+		}
 	} else {
 		/* Legacy I2C message */
 		curr_msg->msg_type = LL_I3C_CONTROLLER_MTYPE_LEGACY_I2C;
@@ -912,18 +927,39 @@ static void i3c_stm32_flush_all_fifo(const struct device *dev)
 static void i3c_stm32_log_err_type(const struct device *dev)
 {
 	const struct i3c_stm32_config *config = dev->config;
+	struct i3c_stm32_data *data = dev->data;
 	I3C_TypeDef *i3c = config->i3c;
+	bool nack_ok = data->curr_msg.nack_ok;
 
 	if (LL_I3C_IsActiveFlag_ANACK(i3c)) {
-		LOG_ERR("Address NACK");
+		data->curr_msg.addr_nack = true;
+
+		if (nack_ok) {
+			LOG_DBG("Address NACK");
+		} else {
+			LOG_ERR("Address NACK");
+		}
 	}
 
+	/*
+	 * A NACKed address aborts the frame, which in turn trips the FIFO
+	 * under/overrun flags. Do not report those as errors when the caller
+	 * already told us the NACK is an expected outcome.
+	 */
 	if (LL_I3C_IsActiveFlag_COVR(i3c)) {
-		LOG_ERR("Control/Status FIFO underrun/overrun");
+		if (nack_ok && data->curr_msg.addr_nack) {
+			LOG_DBG("Control/Status FIFO underrun/overrun");
+		} else {
+			LOG_ERR("Control/Status FIFO underrun/overrun");
+		}
 	}
 
 	if (LL_I3C_IsActiveFlag_DOVR(i3c)) {
-		LOG_ERR("TX/RX FIFO underrun/overrun");
+		if (nack_ok && data->curr_msg.addr_nack) {
+			LOG_DBG("TX/RX FIFO underrun/overrun");
+		} else {
+			LOG_ERR("TX/RX FIFO underrun/overrun");
+		}
 	}
 
 	if (LL_I3C_IsActiveFlag_DNACK(i3c)) {
@@ -1324,6 +1360,16 @@ static int i3c_stm32_transfer_begin(const struct device *dev)
 	}
 
 	if (data->msg_state == STM32_I3C_MSG_ERR) {
+		/*
+		 * Report a NACKed target address distinctly so that callers
+		 * which treat it as a normal bus condition can tell it apart
+		 * from a real bus error. Legacy I2C transfers keep returning
+		 * -EIO to stay compatible with the I2C API.
+		 */
+		if (data->curr_msg.addr_nack && i3c_stm32_curr_msg_is_i3c(dev)) {
+			return -ENODEV;
+		}
+
 		return -EIO;
 	}
 
@@ -1357,8 +1403,14 @@ static int i3c_stm32_i3c_transfer(const struct device *dev, struct i3c_device_de
 
 	ret = i3c_stm32_transfer_begin(dev);
 	if (ret != 0) {
+		bool nack_ok = data->curr_msg.nack_ok;
+
 		i3c_stm32_clear_err(dev, false);
-		LOG_ERR("Failed to transfer messages, err=%d", ret);
+		if ((ret == -ENODEV) && nack_ok) {
+			LOG_DBG("Target NACKed the address, no data available");
+		} else {
+			LOG_ERR("Failed to transfer messages, err=%d", ret);
+		}
 		return ret;
 	}
 
