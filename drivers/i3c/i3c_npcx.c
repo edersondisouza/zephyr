@@ -540,7 +540,13 @@ static inline int npcx_i3c_request_emit_stop(struct i3c_reg *inst)
 
 	/* Make sure we are in a state where we can emit STOP */
 	if (i3c_state == MSTATUS_STATE_IDLE) {
-		LOG_WRN("Request stop in idle state, state= %#x", i3c_state);
+		/*
+		 * The bus is already idle, so there is no frame left to
+		 * terminate. This is the normal outcome of an aborted frame,
+		 * e.g. when the target NACKed its address, so it is only
+		 * reported back through the return code.
+		 */
+		LOG_DBG("Request stop in idle state, state= %#x", i3c_state);
 		return -ECANCELED;
 	}
 
@@ -612,6 +618,15 @@ static inline int npcx_i3c_xfer_stop(struct i3c_reg *inst)
 		break;
 	case MSTATUS_STATE_MSGDDR: /* HDR-DDR */
 		ret = npcx_i3c_request_hdr_exit(inst);
+		break;
+	case MSTATUS_STATE_IDLE:
+		/*
+		 * Nothing to terminate. The controller returns to idle on its
+		 * own when a frame is aborted, which is what happens when the
+		 * target NACKs its address, so this is not a fault.
+		 */
+		ret = -ECANCELED;
+		LOG_DBG("xfer_stop with bus already idle");
 		break;
 	default:
 		/* Not supported */
@@ -1043,12 +1058,15 @@ out_xfer_rd_fifo_dma:
  * param[in] is_read     True if this is a read transaction, false if write.
  * param[in] emit_start  True if START is needed before read/write.
  * param[in] emit_stop   True if STOP is needed after read/write.
+ * param[in] hdr_cmd     HDR command code, only used in HDR-DDR mode.
+ * param[in] nack_ok     True if the caller expects and handles an address NACK.
  *
  * return  Number of bytes read/written, or negative if error.
  */
 static int npcx_i3c_do_one_xfer_dma(const struct device *dev, uint8_t addr,
 				    enum npcx_i3c_mctrl_type op_type, uint8_t *buf, size_t buf_sz,
-				    bool is_read, bool emit_start, bool emit_stop, uint8_t hdr_cmd)
+				    bool is_read, bool emit_start, bool emit_stop, uint8_t hdr_cmd,
+				    bool nack_ok)
 {
 	const struct npcx_i3c_config *config = dev->config;
 	struct i3c_reg *inst = config->base;
@@ -1088,7 +1106,12 @@ static int npcx_i3c_do_one_xfer_dma(const struct device *dev, uint8_t addr,
 
 		ret = npcx_i3c_request_emit_start(inst, addr, op_type, is_read, rd_len);
 		if (ret != 0) {
-			LOG_ERR("%s: emit start fail", __func__);
+			if ((ret == -ENODEV) && nack_ok) {
+				LOG_DBG("%s: address 0x%02x NACKed, reported to caller", __func__,
+					addr);
+			} else {
+				LOG_ERR("%s: emit start fail", __func__);
+			}
 			goto out_do_one_xfer_dma;
 		}
 	}
@@ -1139,12 +1162,14 @@ out_do_one_xfer_dma:
  * param[in] emit_start  True if START is needed before read/write.
  * param[in] emit_stop   True if STOP is needed after read/write.
  * param[in] no_ending   True if not to signal end of write message.
+ * param[in] nack_ok     True if the caller expects and handles an address NACK.
  *
  * return  Number of bytes read/written, or negative if error.
  */
 static int npcx_i3c_do_one_xfer(struct i3c_reg *inst, uint8_t addr,
 				enum npcx_i3c_mctrl_type op_type, uint8_t *buf, size_t buf_sz,
-				bool is_read, bool emit_start, bool emit_stop, bool no_ending)
+				bool is_read, bool emit_start, bool emit_stop, bool no_ending,
+				bool nack_ok)
 {
 	int ret = 0;
 
@@ -1155,7 +1180,12 @@ static int npcx_i3c_do_one_xfer(struct i3c_reg *inst, uint8_t addr,
 	if (emit_start) {
 		ret = npcx_i3c_request_emit_start(inst, addr, op_type, is_read, buf_sz);
 		if (ret != 0) {
-			LOG_ERR("%s: emit start fail", __func__);
+			if ((ret == -ENODEV) && nack_ok) {
+				LOG_DBG("%s: address 0x%02x NACKed, reported to caller", __func__,
+					addr);
+			} else {
+				LOG_ERR("%s: emit start fail", __func__);
+			}
 			goto out_do_one_xfer;
 		}
 	}
@@ -1267,6 +1297,7 @@ static int npcx_i3c_transfer(const struct device *dev, struct i3c_device_desc *t
 		 */
 		bool is_read = (msgs[i].flags & I3C_MSG_RW_MASK) == I3C_MSG_READ;
 		bool no_ending = false;
+		bool nack_ok = (msgs[i].flags & I3C_MSG_NACK_ALLOWED) == I3C_MSG_NACK_ALLOWED;
 
 		/*
 		 * Emit start if this is the first message or that
@@ -1329,9 +1360,13 @@ static int npcx_i3c_transfer(const struct device *dev, struct i3c_device_desc *t
 								  NPCX_I3C_MCTRL_TYPE_I3C, false,
 								  0);
 				if (ret < 0) {
-					LOG_ERR("%s: emit start of broadcast addr failed, error "
-						"(%d)",
-						__func__, ret);
+					if ((ret == -ENODEV) && nack_ok) {
+						LOG_DBG("%s: broadcast addr NACKed", __func__);
+					} else {
+						LOG_ERR("%s: emit start of broadcast addr failed, "
+							"error (%d)",
+							__func__, ret);
+					}
 					break;
 				}
 				send_broadcast = false;
@@ -1362,11 +1397,15 @@ static int npcx_i3c_transfer(const struct device *dev, struct i3c_device_desc *t
 		/* Do transfer with target device */
 		xfered_len = npcx_i3c_do_one_xfer_dma(dev, target->dynamic_addr, op_type,
 						      msgs[i].buf, msgs[i].len, is_read, emit_start,
-						      emit_stop, msgs[i].hdr_cmd_code);
+						      emit_stop, msgs[i].hdr_cmd_code, nack_ok);
 #endif
 
 		if (xfered_len < 0) {
-			LOG_ERR("%s: do xfer fail", __func__);
+			if ((xfered_len == -ENODEV) && nack_ok) {
+				LOG_DBG("%s: target NACKed, no data available", __func__);
+			} else {
+				LOG_ERR("%s: do xfer fail", __func__);
+			}
 			ret = xfered_len; /* Set error code to ret */
 			break;
 		}
@@ -1688,7 +1727,7 @@ static int npcx_i3c_do_ccc(const struct device *dev, struct i3c_ccc_payload *pay
 
 			xfered_len = npcx_i3c_do_one_xfer(
 				inst, tgt_payload->addr, NPCX_I3C_MCTRL_TYPE_I3C, tgt_payload->data,
-				tgt_payload->data_len, is_read, true, false, false);
+				tgt_payload->data_len, is_read, true, false, false, false);
 			if (xfered_len < 0) {
 				ret = xfered_len;
 				LOG_ERR("CCC[0x%02x] target payload error (%d)", payload->ccc.id,
