@@ -39,6 +39,15 @@ static inline void mctp_i3c_recv_msg(struct mctp_binding_i3c_controller *binding
 		.flags = I3C_MSG_READ | I3C_MSG_STOP,
 	};
 
+#ifndef CONFIG_MCTP_I3C_CONTROLLER_IBI_MODE
+	/*
+	 * In the polling model of DSP0233 section 5.2.2.4 a target with no
+	 * data to send NACKs its own address. That is an expected outcome
+	 * here, so tell the controller driver not to log it as an error.
+	 */
+	msg.flags |= I3C_MSG_NACK_ALLOWED;
+#endif /* CONFIG_MCTP_I3C_CONTROLLER_IBI_MODE */
+
 	rc = i3c_transfer(dev, &msg, 1);
 	if (rc != 0) {
 #ifdef CONFIG_MCTP_I3C_CONTROLLER_IBI_MODE
