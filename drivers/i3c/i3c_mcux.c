@@ -1086,6 +1086,7 @@ static int mcux_i3c_transfer(const struct device *dev,
 	for (int i = 0; i < num_msgs; i++) {
 		bool is_read = (msgs[i].flags & I3C_MSG_RW_MASK) == I3C_MSG_READ;
 		bool no_ending = false;
+		bool nack_ok = (msgs[i].flags & I3C_MSG_NACK_ALLOWED) == I3C_MSG_NACK_ALLOWED;
 
 		/*
 		 * Emit start if this is the first message or that
@@ -1124,7 +1125,13 @@ static int mcux_i3c_transfer(const struct device *dev,
 				ret = mcux_i3c_request_emit_start(
 					dev_data, base, I3C_BROADCAST_ADDR, false, false, 0);
 				if (ret == -ENODEV) {
-					LOG_WRN("emit start of broadcast addr got NACK, maybe IBI");
+					if (nack_ok) {
+						LOG_DBG("emit start of broadcast addr got NACK, "
+							"maybe IBI");
+					} else {
+						LOG_WRN("emit start of broadcast addr got NACK, "
+							"maybe IBI");
+					}
 					/* wait for idle then try again */
 					mcux_i3c_wait_idle(dev_data, base);
 					continue;
