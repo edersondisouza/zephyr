@@ -347,6 +347,25 @@ enum i3c_data_rate {
 /** Skip I3C broadcast header. Private Transfers only. */
 #define I3C_MSG_NBCH			BIT(4)
 
+/**
+ * A NACK of the target address is an expected outcome of this message.
+ *
+ * Some protocols layered on top of I3C, such as MCTP (see the polling
+ * model in DSP0233 section 5.2.2.4), rely on a target NACKing its own
+ * address to signal that it currently has nothing to transfer. In that
+ * case a NACK is a normal bus condition rather than a fault.
+ *
+ * Setting this flag tells the controller driver that the caller handles
+ * the resulting -ENODEV itself, so the driver must not report the NACK
+ * (or the FIFO/abort side effects it causes) through the logging
+ * subsystem at a severity higher than debug.
+ *
+ * @note This flag only affects diagnostics. The transfer still fails
+ * with -ENODEV so that the caller can distinguish "no data available"
+ * from a successful zero-length transfer.
+ */
+#define I3C_MSG_NACK_ALLOWED		BIT(5)
+
 /** I3C HDR Mode 0 */
 #define I3C_MSG_HDR_MODE0		BIT(0)
 
@@ -2011,6 +2030,11 @@ static inline int z_impl_i3c_do_ccc_cb(const struct device *dev,
  * @retval 0 on success.
  * @retval -EBUSY Bus is busy.
  * @retval -EIO General input / output error.
+ * @retval -ENODEV Target NACKed its address. This is not necessarily
+ *                 a fault: some protocols use a NACK to signal that
+ *                 the target has no data available. Set
+ *                 #I3C_MSG_NACK_ALLOWED on the message to keep the
+ *                 driver from logging it as an error.
  */
 __syscall int i3c_transfer(struct i3c_device_desc *target,
 			   struct i3c_msg *msgs, uint8_t num_msgs);
@@ -2051,6 +2075,7 @@ static inline int z_impl_i3c_transfer(struct i3c_device_desc *target,
  * @retval 0 If successful.
  * @retval -EBUSY Bus is busy.
  * @retval -EIO General input / output error.
+ * @retval -ENODEV Target NACKed its address. See i3c_transfer().
  */
 __syscall int i3c_transfer_cb(struct i3c_device_desc *target,
 			      struct i3c_msg *msgs,

@@ -136,6 +136,31 @@ initialization function:
         hot-join events. IBI event should only be enabled when
         enabling IBI of a device.
 
+Address NACK Handling
+=====================
+
+A target NACKing its own address is not necessarily a fault. Protocols
+layered on top of I3C may rely on it: for example, in the polling model
+described in section 5.2.2.4 of the MCTP I3C binding specification
+(DSP0233), a target with nothing to send NACKs the read it receives.
+
+To keep this usable across controllers, the I3C API defines the
+following contract:
+
+* A controller driver returns ``-ENODEV`` from :c:func:`i3c_transfer`
+  (and the helpers built on top of it) when the target NACKed its
+  address. ``-EIO`` remains reserved for actual bus errors.
+
+* A caller which considers a NACK a normal outcome sets
+  ``I3C_MSG_NACK_ALLOWED`` in :c:member:`i3c_msg.flags`. The transfer
+  still fails with ``-ENODEV``, so that the caller can tell "no data
+  available" apart from a successful zero-length transfer, but the
+  driver must not report the NACK, nor the FIFO under/overrun and abort
+  side effects it causes, above ``LOG_LEVEL_DBG``.
+
+* Without the flag, drivers are free to keep logging an unexpected NACK
+  as an error, since it usually points at a misconfigured bus.
+
 In-Band Interrupt (IBI)
 =======================
 
