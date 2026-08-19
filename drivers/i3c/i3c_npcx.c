@@ -2805,6 +2805,31 @@ static int npcx_i3c_config_get(const struct device *dev, enum i3c_config_type ty
 	return 0;
 }
 
+/*
+ * brief:  Report the target mode ERRWARN register content.
+ *
+ * A TX underrun that ends up NACKing the read (URUNNACK) is how a target
+ * tells the controller it currently has nothing to send. Protocols such as
+ * MCTP (DSP0233 section 5.2.2.4) poll targets exactly this way, so it is a
+ * normal bus condition and is only reported at debug level. Any other
+ * ERRWARN bit is a genuine fault and is still reported as an error.
+ *
+ * param[in] dev      Pointer to device driver instance.
+ * param[in] errwarn  Content of the ERRWARN register.
+ */
+static void npcx_i3c_target_log_errwarn(const struct device *dev, uint32_t errwarn)
+{
+	uint32_t faults = errwarn & ~BIT(NPCX_I3C_ERRWARN_URUNNACK);
+
+	if (IS_BIT_SET(errwarn, NPCX_I3C_ERRWARN_URUNNACK)) {
+		LOG_DBG("%s: no TX data pending, read request NACKed", dev->name);
+	}
+
+	if (faults != 0U) {
+		LOG_ERR("%s: Error %#x", dev->name, faults);
+	}
+}
+
 static void npcx_i3c_target_isr(const struct device *dev)
 {
 	struct npcx_i3c_data *data = dev->data;
@@ -2895,8 +2920,10 @@ static void npcx_i3c_target_isr(const struct device *dev)
 
 		/* Check error or warning has occurred */
 		if (IS_BIT_SET(inst->INTMASKED, NPCX_I3C_INTMASKED_ERRWARN)) {
-			LOG_ERR("%s: Error %#x", __func__, inst->ERRWARN);
-			inst->ERRWARN = inst->ERRWARN;
+			uint32_t errwarn = inst->ERRWARN;
+
+			npcx_i3c_target_log_errwarn(dev, errwarn);
+			inst->ERRWARN = errwarn;
 		}
 
 		/* Check incoming header matched target dynamic address */
