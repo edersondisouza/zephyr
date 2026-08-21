@@ -1,4 +1,4 @@
-const c = @import("cimport.zig");
+const c = @import("cimport");
 
 const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led1"), "gpios");
 

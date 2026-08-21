@@ -1,4 +1,4 @@
-const c = @import("cimport.zig");
+const c = @import("cimport");
 const std = @import("std");
 
 const STACKSIZE: c_int = 512;
