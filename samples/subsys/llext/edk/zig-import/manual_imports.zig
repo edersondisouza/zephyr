@@ -143,73 +143,7 @@ pub fn unexpectedErrno(err: i32) UnexpectedError {
     return error.Unexpected;
 }
 
-pub const SemInitError = error{
-    InvalidLimit,
-    InvalidCount,
-} || UnexpectedError;
-
-pub fn k_sem_init(sem: *struct_k_sem, initial_count: u32, limit: u32) SemInitError!void {
-    if (limit == 0) return error.InvalidLimit;
-    if (initial_count > limit) return error.InvalidCount;
-
-    const ret: i32 = blk: {
-        if (comptime CONFIG_USERSPACE == 1) {
-            if (z_syscall_trap()) {
-                break :blk @bitCast(arch_syscall_invoke3(@intFromPtr(sem), initial_count, limit, K_SYSCALL_K_SEM_INIT));
-            }
-        }
-
-        compiler_barrier();
-        break :blk z_impl_k_sem_init(sem, initial_count, limit);
-    };
-
-    switch (ret) {
-        SUCCESS => return,
-        -EINVAL => unreachable,
-        else => |err| return unexpectedErrno(err),
-    }
-}
-
-pub fn k_sem_give(sem: *struct_k_sem) void {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            _ = arch_syscall_invoke1(@intFromPtr(sem), K_SYSCALL_K_SEM_GIVE);
-            return;
-        }
-    }
-
-    compiler_barrier();
-    z_impl_k_sem_give(sem);
-}
-
-pub const SemTakeError = error{
-    Busy,
-    TimedOutOrReset
-} || UnexpectedError;
-
-pub fn k_sem_take(sem: *struct_k_sem, timeout: k_timeout_t) SemTakeError!void {
-    const ret: i32 = blk: {
-        if (comptime CONFIG_USERSPACE == 1) {
-            if (z_syscall_trap()) {
-                const ticks: u64 = @bitCast(timeout.ticks);
-                const hi: u32 = @intCast(ticks >> 32);
-                const lo: u32 = @intCast(ticks & 0xffffffff);
-
-                break :blk @bitCast(arch_syscall_invoke3(@intFromPtr(sem), lo, hi, K_SYSCALL_K_SEM_TAKE));
-            }
-        }
-
-        compiler_barrier();
-        break :blk z_impl_k_sem_take(sem, timeout);
-    };
-
-    switch (ret) {
-        SUCCESS => return,
-        -EBUSY => return error.Busy,
-        -EAGAIN => return error.TimedOutOrReset,
-        else => |err| return unexpectedErrno(err),
-    }
-}
+// k_sem_* migrated to the curated layer: see zig-import/api/sem.zig
 
 pub fn k_thread_stack_alloc(size: usize, flags: i32) !*k_thread_stack_t {
     var ret: usize = undefined;

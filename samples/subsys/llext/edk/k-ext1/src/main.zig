@@ -1,3 +1,4 @@
+const z = @import("zephyr");
 const c = @import("cimport");
 const std = @import("std");
 
@@ -7,7 +8,7 @@ const PRIORITY: u32 = 2;
 pub const K_FOREVER = c.k_timeout_t{.ticks = -1};
 pub const K_NO_WAIT = c.k_timeout_t{};
 
-var my_sem: *c.k_sem = undefined;
+var my_sem: z.Semaphore = undefined;
 
 const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led0"), "gpios");
 
@@ -25,17 +26,15 @@ pub fn tick_sub(_: ?*anyopaque, _: ?*anyopaque, _: ?*anyopaque) callconv(.c) voi
         c.printk("[zig][k-ext1]Waiting event\n");
         _ = c.k_event_wait(tick_evt, c.CHAN_TICK, true, K_FOREVER);
         c.printk("[zig][k-ext1]Got event, giving sem\n");
-        c.k_sem_give(my_sem);
+        my_sem.give();
     }
 }
 
 pub fn start() callconv(.c) c_int {
-    my_sem = c.k_object_alloc(c.K_OBJ_EVENT, c.k_sem) catch {
-        c.printk("[zig][k-ext1]k_object_alloc 1 failed!\n");
+    my_sem = z.Semaphore.alloc(0, 1) catch {
+        c.printk("[zig][k-ext1]semaphore alloc failed!\n");
         return 2;
     };
-
-    c.k_sem_init(my_sem, 0, 1) catch unreachable;
 
     const sub_stack: *c.k_thread_stack_t = c.k_thread_stack_alloc(STACKSIZE, 0) catch {
         c.printk("[zig][k-ext1]k_thread_stack_alloc failed!\n");
@@ -67,7 +66,7 @@ pub fn start() callconv(.c) c_int {
         var l: usize = undefined;
 
         c.printk("[zig][k-ext1]Waiting sem\n");
-        c.k_sem_take(my_sem, K_FOREVER) catch unreachable;
+        my_sem.take(.forever) catch unreachable;
 
         c.printk("[zig][k-ext1]Got sem, reading channel\n");
         c.receive(c.CHAN_TICK, &l, @sizeOf(@TypeOf(l))) catch |err| switch (err) {
