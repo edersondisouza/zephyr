@@ -1,0 +1,10 @@
+# syscalls.zig is committed: it is small, reviewable, and what the curated
+# layer is type-checked against. Everything else here is a build product.
+#
+# cimport.zig is 15 MB of translate-c output with no review value, and
+# gen/regen.sh reproduces it in seconds.
+cimport.zig
+.imports.d
+.syscalls.txt
+.curated.txt
+.undefined.txt
