@@ -7,7 +7,7 @@ const PRIORITY: i32 = 2;
 
 var my_sem: z.Semaphore = undefined;
 
-const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led0"), "gpios");
+const led = z.gpio.Pin.fromDt(z.dt.alias("led0"), "gpios");
 
 fn tick_sub() void {
     const tick_evt = z.Event.alloc() catch {
@@ -40,13 +40,13 @@ pub fn start() callconv(.c) c_int {
         return 3;
     };
 
-    if (!c.gpio_is_ready_dt(&led)) {
+    if (!led.isReady()) {
         c.printk("[zig][k-ext1]LED is not ready!\n");
         return 4;
     }
 
-    c.gpio_pin_configure_dt(&led, c.GPIO_OUTPUT_ACTIVE) catch {
-        c.printk("[zig][k-ext1]gpio_pin_configure_dt failed!\n");
+    led.configure(.output_active) catch {
+        c.printk("[zig][k-ext1]LED configure failed!\n");
         return 5;
     };
 
@@ -67,7 +67,7 @@ pub fn start() callconv(.c) c_int {
         c.printk("[zig][k-ext1]Read val: %ld\n", l);
 
         c.printk("[zig][k-ext1]Toggling light!\n");
-        c.gpio_pin_toggle_dt(&led) catch {
+        led.toggle() catch {
             c.printk("[zig][k-ext1]Failed to toggle light!\n");
         };
     }

@@ -1,7 +1,7 @@
 const z = @import("zephyr");
 const c = @import("cimport");
 
-const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led1"), "gpios");
+const led = z.gpio.Pin.fromDt(z.dt.alias("led1"), "gpios");
 
 pub fn start() callconv(.c) c_int {
     const tick_evt = z.Event.alloc() catch {
@@ -11,13 +11,13 @@ pub fn start() callconv(.c) c_int {
 
     c.register_subscriber(c.CHAN_TICK, tick_evt.raw) catch unreachable;
 
-    if (!c.gpio_is_ready_dt(&led)) {
+    if (!led.isReady()) {
         c.printk("[zig][ext1]LED is not ready!\n");
         return 2;
     }
 
-    c.gpio_pin_configure_dt(&led, c.GPIO_OUTPUT_ACTIVE) catch {
-        c.printk("[zig][ext1]gpio_pin_configure_dt failed!\n");
+    led.configure(.output_active) catch {
+        c.printk("[zig][ext1]LED configure failed!\n");
         return 3;
     };
 
@@ -44,7 +44,7 @@ pub fn start() callconv(.c) c_int {
 
         if (l % 2 == 1) {
             c.printk("[zig][ext1]Toggling light on odd value!\n");
-            c.gpio_pin_toggle_dt(&led) catch {
+            led.toggle() catch {
                 c.printk("[zig][ext1]Failed to toggle light!\n");
             };
         }
