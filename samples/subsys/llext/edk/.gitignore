@@ -1,0 +1,9 @@
+# Build products of the extension builds.
+#
+# The only generated file that is committed is
+# zig-import/generated/syscalls.zig, which is small, reviewable, and what the
+# curated layer is type-checked against. See zig-import/README.md.
+*.llext
+*.inc
+*.o
+cimport.zig
