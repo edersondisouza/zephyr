@@ -8,9 +8,13 @@
 # Makefile.cflags, so pointing LLEXT_EDK_INSTALL_DIR at a different EDK is the
 # only change needed to target a different board.
 #
-# The module graph is what enforces the tiering. An extension sees `zephyr`
-# (curated) and `cimport` (types and constants); tier 0 is reachable only
-# through `zephyr.uncurated`.
+# The module graph is what enforces the layering. An extension sees `zephyr`
+# (curated Zephyr), `app` (the application's own bindings) and `cimport`
+# (types and constants); tier 0 is reachable only through
+# `zephyr.uncurated`. `app` depends on `zephyr` and not the other way round,
+# so the application's bindings can use the curated layer's public surface
+# but nothing inside it -- and Zephyr's side cannot come to depend on the
+# application's.
 
 set -euo pipefail
 
@@ -29,8 +33,9 @@ echo "==> build $(basename "$SRC") -> $OUT"
 # shellcheck disable=SC2086
 "$ZIG" build-obj -target "$ZIG_TARGET" $ZIG_MCPU -OReleaseSmall \
     -femit-bin="$OUT" \
-    --dep zephyr --dep cimport -Mroot="$SRC" \
+    --dep zephyr --dep app --dep cimport -Mroot="$SRC" \
     --dep cimport -Mzephyr="$ZIG_IMPORT/zephyr.zig" \
+    --dep zephyr --dep cimport -Mapp="$APP_API" \
     -Mcimport="$GENERATED/cimport.zig"
 
 "$HERE/check.sh" "$SRC" "$OUT"

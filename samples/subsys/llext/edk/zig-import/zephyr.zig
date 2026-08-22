@@ -21,7 +21,6 @@
 //! you find yourself reaching for it, that is the signal to curate the area.
 
 /// Curated APIs.
-pub const app = @import("api/app.zig");
 pub const Event = @import("api/event.zig").Event;
 pub const dt = @import("api/devicetree.zig");
 pub const gpio = @import("api/gpio.zig");
@@ -37,6 +36,10 @@ pub const busyWait = @import("api/thread.zig").busyWait;
 pub const isPreemptible = @import("api/thread.zig").isPreemptible;
 
 pub const UnexpectedError = @import("api/errno.zig").UnexpectedError;
+/// Report a return code no wrapper models. Public so that bindings built on
+/// top of this layer -- an application's own syscalls, say -- can say the
+/// same thing the same way.
+pub const unexpected = @import("api/errno.zig").unexpected;
 
 /// Escape hatch: every syscall the extension API can reach, exactly as the C
 /// stub marshals it. ABI-correct and safe to call, but C-shaped -- reaching

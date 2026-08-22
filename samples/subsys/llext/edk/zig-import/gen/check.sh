@@ -13,6 +13,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ZIG_IMPORT="$(cd "$HERE/.." && pwd)"
 GENERATED="$ZIG_IMPORT/generated"
+APP_API_DIR="${APP_API_DIR:-$ZIG_IMPORT/../app/zig}"
 
 SRC="${1:-}"
 OBJ="${2:-}"
@@ -26,7 +27,8 @@ rc=0
 # rather than a silent misbehaviour on target, and it is why an LLM-assisted
 # curation pass cannot introduce a wrong-syscall-id bug.
 
-OFFENDERS="$(grep -rln 'arch_syscall_invoke' "$ZIG_IMPORT/api" "$ZIG_IMPORT/zephyr.zig" 2>/dev/null || true)"
+OFFENDERS="$(grep -rln 'arch_syscall_invoke' "$ZIG_IMPORT/api" "$APP_API_DIR" \
+    "$ZIG_IMPORT/zephyr.zig" 2>/dev/null || true)"
 if [ -n "$OFFENDERS" ]; then
     echo "==> ERROR: curated code marshals syscalls directly:" >&2
     printf '      %s\n' $OFFENDERS >&2
@@ -77,7 +79,8 @@ fi
 # ---- 4. coverage (advisory) ------------------------------------------------
 
 if [ -f "$SYSCALLS" ]; then
-    grep -rhoP '(?<=\bsyscall\.)\w+' "$ZIG_IMPORT/api" 2>/dev/null | sort -u > "$GENERATED/.curated.txt"
+    grep -rhoP '(?<=\bsyscall\.)\w+' "$ZIG_IMPORT/api" "$APP_API_DIR" 2>/dev/null \
+        | sort -u > "$GENERATED/.curated.txt"
     CURATED="$(comm -12 "$SYSCALLS" "$GENERATED/.curated.txt" | wc -l)"
     TOTAL="$(wc -l < "$SYSCALLS")"
     echo "==> coverage: $CURATED of $TOTAL reachable syscalls have a curated API"

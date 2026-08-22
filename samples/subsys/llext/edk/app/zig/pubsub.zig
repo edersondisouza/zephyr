@@ -7,13 +7,23 @@
 //! a Zephyr area. That is the whole point: an application author is a
 //! maintainer of their own bindings, using the same machinery.
 //!
-//! In a real project this file would ship with the application rather than
-//! living under `zig-import/`.
+//! It is its own module rather than part of `zephyr`, because it is not
+//! Zephyr and it is not the Zephyr maintainer's to keep working. That
+//! boundary is enforced rather than documented: this module can reach only
+//! the curated layer's public surface, the same surface any third party
+//! writing bindings would have. It sits with the application it belongs to
+//! rather than under `zig-import/`, which is also what keeps it out of the
+//! zephyr module's root directory -- Zig will not have one file belong to
+//! two modules.
+//!
+//! `zephyr.uncurated` is named for an extension author, for whom it means
+//! "not curated yet". For a binding author it is simply the generated
+//! marshalling layer, and calling it is the job.
 
+const z = @import("zephyr");
 const c = @import("cimport");
-const syscall = @import("../generated/syscalls.zig");
-const errno = @import("errno.zig");
-const Event = @import("event.zig").Event;
+const syscall = z.uncurated;
+const Event = z.Event;
 
 /// The channels the application defines.
 ///
@@ -28,7 +38,7 @@ pub const PublishError = error{
     /// No subscriber was ready to take the message.
     BusyChannel,
     TimedOut,
-} || errno.UnexpectedError;
+} || z.UnexpectedError;
 
 pub const ReceiveError = error{
     /// The destination is smaller than the channel's message.
@@ -36,14 +46,14 @@ pub const ReceiveError = error{
     /// Another reader holds the channel.
     BusyChannel,
     TimedOut,
-} || errno.UnexpectedError;
+} || z.UnexpectedError;
 
 pub const SubscribeError = error{
     /// Unsubscribing a thread that was not subscribed.
     InvalidSubscriber,
     /// The channel has no free subscriber slot.
     TooManySubscribers,
-} || errno.UnexpectedError;
+} || z.UnexpectedError;
 
 /// Publish a message. `data` is a pointer to the channel's message type; its
 /// length comes from the type, rather than being passed alongside it and
@@ -55,7 +65,7 @@ pub fn publish(channel: Channel, data: anytype) PublishError!void {
         0 => {},
         -c.EBUSY => error.BusyChannel,
         -c.EAGAIN => error.TimedOut,
-        else => |err| errno.unexpected(err),
+        else => |err| z.unexpected(err),
     };
 }
 
@@ -70,7 +80,7 @@ pub fn receive(channel: Channel, out: anytype) ReceiveError!void {
         -c.EINVAL => error.ReceivingBufferTooSmall,
         -c.EBUSY => error.BusyChannel,
         -c.EAGAIN => error.TimedOut,
-        else => |err| errno.unexpected(err),
+        else => |err| z.unexpected(err),
     };
 }
 
@@ -90,6 +100,6 @@ fn check(ret: c_int) SubscribeError!void {
         0 => {},
         -c.ENOENT => error.InvalidSubscriber,
         -c.ENOMEM => error.TooManySubscribers,
-        else => |err| errno.unexpected(err),
+        else => |err| z.unexpected(err),
     };
 }

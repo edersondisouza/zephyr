@@ -1,4 +1,5 @@
 const z = @import("zephyr");
+const app = @import("app");
 const c = @import("cimport");
 
 const led = z.gpio.Pin.fromDt(z.dt.alias("led1"), "gpios");
@@ -9,7 +10,7 @@ pub fn start() callconv(.c) c_int {
         return 1;
     };
 
-    z.app.subscribe(.tick, tick_evt) catch unreachable;
+    app.subscribe(.tick, tick_evt) catch unreachable;
 
     if (!led.isReady()) {
         c.printk("[zig][ext1]LED is not ready!\n");
@@ -32,7 +33,7 @@ pub fn start() callconv(.c) c_int {
         _ = tick_evt.wait(c.CHAN_TICK, .{ .consume = false, .reset = true });
 
         c.printk("[zig][ext1]Got event, reading channel\n");
-        z.app.receive(.tick, &l) catch |err| switch (err) {
+        app.receive(.tick, &l) catch |err| switch (err) {
             error.BusyChannel => {
                 c.printk("[zig][k-ext1]Busy channel! Continuing...\n");
                 continue;

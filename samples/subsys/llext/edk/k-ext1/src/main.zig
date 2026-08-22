@@ -1,4 +1,5 @@
 const z = @import("zephyr");
+const app = @import("app");
 const c = @import("cimport");
 const std = @import("std");
 
@@ -15,7 +16,7 @@ fn tick_sub() void {
         return;
     };
 
-    z.app.subscribe(.tick, tick_evt) catch unreachable;
+    app.subscribe(.tick, tick_evt) catch unreachable;
 
     while (true) {
         c.printk("[zig][k-ext1]Waiting event\n");
@@ -57,7 +58,7 @@ pub fn start() callconv(.c) c_int {
         my_sem.take(.forever) catch unreachable;
 
         c.printk("[zig][k-ext1]Got sem, reading channel\n");
-        z.app.receive(.tick, &l) catch |err| switch (err) {
+        app.receive(.tick, &l) catch |err| switch (err) {
             error.BusyChannel => {
                 c.printk("[zig][k-ext1]Busy channel! Continuing...\n");
                 continue;

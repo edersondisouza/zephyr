@@ -12,6 +12,13 @@ ZIG_IMPORT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GENERATED="$ZIG_IMPORT/generated"
 IMPORTS_H="${IMPORTS_H:-$ZIG_IMPORT/imports.h}"
 
+# The application's own bindings. Deliberately outside ZIG_IMPORT: they are
+# not Zephyr's, they are not the Zephyr maintainer's to keep working, and
+# keeping them out of the zephyr module's root directory is also what stops
+# Zig seeing one file as belonging to two modules. A real project would point
+# this at its own tree.
+APP_API="${APP_API:-$ZIG_IMPORT/../app/zig/pubsub.zig}"
+
 : "${LLEXT_EDK_INSTALL_DIR:?set LLEXT_EDK_INSTALL_DIR to the extracted llext-edk directory}"
 CFLAGS_MK="$LLEXT_EDK_INSTALL_DIR/Makefile.cflags"
 [ -f "$CFLAGS_MK" ] || { echo "no Makefile.cflags under $LLEXT_EDK_INSTALL_DIR" >&2; exit 1; }

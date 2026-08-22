@@ -42,18 +42,22 @@ never mix:
 
 ```
         extension  ──uses──▶  zephyr (tier 1, curated, Zig-native)
-                                 │ calls
-                                 ▼
-                             syscalls.zig (tier 0, generated, C-shaped)
-                                 │ svc
-                                 ▼
-                             Zephyr kernel
+             │                   │ calls
+             │                   ▼
+             │               syscalls.zig (tier 0, generated, C-shaped)
+             │                   │ svc
+             │                   ▼
+             │               Zephyr kernel
+             │
+             └──uses──▶  app  (../app/zig, the application's own bindings)
+                              built on zephyr's public surface, same way
 ```
 
 ### The rule that holds it together
 
 **Curated code never marshals a syscall itself.** `gen/check.sh` fails the build
-if `arch_syscall_invoke` appears anywhere under `api/`.
+if `arch_syscall_invoke` appears anywhere under `api/` or in the application's
+bindings.
 
 That one constraint pays for the whole design:
 
@@ -99,7 +103,12 @@ That one constraint pays for the whole design:
 
 An application with its own `__syscall` declarations gets all of this for free:
 the sample's `publish` lands in the generated stubs alongside `k_sem_take`, so
-an app author curating their own API follows exactly the same steps.
+an app author curating their own API follows exactly the same steps. Those
+bindings are a separate module living with the application (`app/zig/`), not
+part of `zephyr` -- keeping the Zephyr maintainer's work and the application
+author's apart is a property of the module graph rather than a convention.
+The app module depends on `zephyr` and not the reverse, so it reaches only
+the public surface any third party would have.
 
 ## Curation policy
 
