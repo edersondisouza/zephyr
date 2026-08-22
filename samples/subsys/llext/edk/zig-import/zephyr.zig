@@ -21,6 +21,7 @@
 //! you find yourself reaching for it, that is the signal to curate the area.
 
 /// Curated APIs.
+pub const Event = @import("api/event.zig").Event;
 pub const Semaphore = @import("api/sem.zig").Semaphore;
 pub const Timeout = @import("api/timeout.zig").Timeout;
 
