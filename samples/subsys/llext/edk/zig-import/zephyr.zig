@@ -21,6 +21,7 @@
 //! you find yourself reaching for it, that is the signal to curate the area.
 
 /// Curated APIs.
+pub const app = @import("api/app.zig");
 pub const Event = @import("api/event.zig").Event;
 pub const dt = @import("api/devicetree.zig");
 pub const gpio = @import("api/gpio.zig");
