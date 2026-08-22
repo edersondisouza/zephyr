@@ -2,17 +2,14 @@ const z = @import("zephyr");
 const c = @import("cimport");
 const std = @import("std");
 
-const STACKSIZE: c_int = 512;
-const PRIORITY: u32 = 2;
-
-pub const K_FOREVER = c.k_timeout_t{.ticks = -1};
-pub const K_NO_WAIT = c.k_timeout_t{};
+const STACKSIZE: usize = 512;
+const PRIORITY: i32 = 2;
 
 var my_sem: z.Semaphore = undefined;
 
 const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led0"), "gpios");
 
-pub fn tick_sub(_: ?*anyopaque, _: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
+fn tick_sub() void {
     const tick_evt = z.Event.alloc() catch {
         c.printk("[zig][k-ext1]event alloc failed!\n");
         return;
@@ -34,30 +31,23 @@ pub fn start() callconv(.c) c_int {
         return 2;
     };
 
-    const sub_stack: *c.k_thread_stack_t = c.k_thread_stack_alloc(STACKSIZE, 0) catch {
-        c.printk("[zig][k-ext1]k_thread_stack_alloc failed!\n");
+    _ = z.Thread.spawn(tick_sub, .{}, .{
+        .stack_size = STACKSIZE,
+        .priority = PRIORITY,
+        .flags = c.K_INHERIT_PERMS,
+    }) catch {
+        c.printk("[zig][k-ext1]thread spawn failed!\n");
         return 3;
-    };
-
-    const sub_thread = c.k_object_alloc(c.K_OBJ_THREAD, c.k_thread) catch {
-        c.printk("[zig][k-ext1]k_object_alloc 2 failed!\n");
-        return 4;
-    };
-
-    _ = c.k_thread_create(sub_thread, sub_stack, STACKSIZE, tick_sub, null, null, null, PRIORITY,
-        c.K_INHERIT_PERMS, K_NO_WAIT) catch {
-        c.printk("[zig][k-ext1]k_thread_create failed!\n");
-        return 5;
     };
 
     if (!c.gpio_is_ready_dt(&led)) {
         c.printk("[zig][k-ext1]LED is not ready!\n");
-        return 6;
+        return 4;
     }
 
     c.gpio_pin_configure_dt(&led, c.GPIO_OUTPUT_ACTIVE) catch {
         c.printk("[zig][k-ext1]gpio_pin_configure_dt failed!\n");
-        return 7;
+        return 5;
     };
 
     while (true) {

@@ -120,52 +120,7 @@ pub fn unexpectedErrno(err: i32) UnexpectedError {
 
 // k_sem_* migrated to the curated layer: see zig-import/api/sem.zig
 
-pub fn k_thread_stack_alloc(size: usize, flags: i32) !*k_thread_stack_t {
-    var ret: usize = undefined;
-
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            ret = arch_syscall_invoke2(size, @bitCast(flags), K_SYSCALL_K_THREAD_STACK_ALLOC);
-            return if (ret == 0) error.OutOfMemory else @ptrFromInt(ret);
-        }
-    }
-
-    compiler_barrier();
-    ret = @intFromPtr(z_impl_k_thread_stack_alloc(size, flags));
-
-    return if (ret == 0) error.OutOfMemory else @ptrFromInt(ret);
-}
-
-pub fn k_thread_create(new_thread: *struct_k_thread, stack: *k_thread_stack_t, stack_size: usize, entry: k_thread_entry_t, p1: ?*anyopaque, p2: ?*anyopaque, p3: ?*anyopaque, prio: i32, options: u32, delay: k_timeout_t) !*struct_k_thread {
-    var ret: usize = undefined;
-
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            const ticks: u64 = @bitCast(delay.ticks);
-            const hi: u32 = @intCast(ticks >> 32);
-            const lo: u32 = @intCast(ticks & 0xffffffff);
-
-            const more = [_]usize{
-                @intFromPtr(p2),
-                @intFromPtr(p3),
-                @bitCast(prio),
-                options,
-                hi,
-                lo
-            };
-
-            ret = arch_syscall_invoke6(@intFromPtr(new_thread), @intFromPtr(stack), stack_size,
-                @intFromPtr(entry), @intFromPtr(p1), @intFromPtr(&more), K_SYSCALL_K_THREAD_STACK_ALLOC);
-            return if (ret == 0) error.OutOfMemory else @ptrFromInt(ret);
-        }
-    }
-
-    compiler_barrier();
-    ret = @intFromPtr(z_impl_k_thread_create(new_thread, stack, stack_size, entry, p1, p2, p3,
-            prio, options, delay));
-
-    return if (ret == 0) error.OutOfMemory else @ptrFromInt(ret);
-}
+// k_thread_* migrated to the curated layer: see zig-import/api/thread.zig
 
 pub const RegisterSubscriberError = error{
     InvalidChannel,
