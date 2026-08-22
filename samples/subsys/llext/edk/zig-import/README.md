@@ -8,10 +8,44 @@ stop reading here:
 ```zig
 const z = @import("zephyr");
 
+const led = z.gpio.Pin.fromDt(z.dt.alias("led0"), "gpios");
+try led.configure(.output_active);
+
 const sem = try z.Semaphore.alloc(0, 1);
-try sem.take(.ms(100));
-sem.give();
+const evt = try z.Event.alloc();
+
+_ = try z.Thread.spawn(worker, .{&context}, .{ .stack_size = 512, .priority = 2 });
+
+if (evt.wait(TICK, .{ .timeout = .ms(100) })) |matched| {
+    if (matched & TICK != 0) try led.toggle();
+    try sem.take(.forever);
+}
 ```
+
+### What is curated
+
+| area | reached as | notes |
+|---|---|---|
+| semaphores | `z.Semaphore` | `alloc` for userspace, `init` over your own storage |
+| events | `z.Event` | `wait` returns `?u32`; consuming by default |
+| threads | `z.Thread`, `z.sleep`, `z.yield` | `spawn` takes a Zig function and its arguments |
+| GPIO | `z.gpio.Pin`, `z.gpio.Port` | `Flags` is a packed struct; interrupts are an enum |
+| timeouts | `z.Timeout` | `.ms(100)`, `.seconds(1)`, `.forever`, `.no_wait` |
+| devicetree | `z.dt` | `alias`, `device`, phandle and cell access |
+
+That is **49 of the 120** syscalls this build can reach. Everything else is
+callable as `zephyr.uncurated.*` — ABI-correct, C-shaped, and reported by
+`gen/check.sh` as curation still to do. The application's own API is a separate
+module, `app` (see below).
+
+The larger areas still uncurated, by syscall count: message queues (10), the
+rest of threads (9), timers (8), queues (8), poll (5), pipes (5), condvars (4),
+device (4), stacks (3), mutexes (3). Read *Known gaps* before starting on
+timers or work queues — some of that surface is not reachable from a userspace
+extension at all.
+
+That example is `probe/readme.zig`, and it is compiled — a documented example
+nobody builds rots.
 
 **Maintaining the bindings?** The rest of this file is for you.
 
@@ -28,7 +62,9 @@ Writing the wrappers by hand is not the fix. Each one is a transcription of a
 marshalling recipe — pack arguments into `uintptr_t` slots, split 64-bit values
 low-word-first, pick the arity, pass the right syscall id — and the hand-written
 layer this replaced had two ABI bugs in thirteen functions. They were not
-misunderstandings; they were typos in repetitive work.
+misunderstandings; they were typos in repetitive work. That layer is gone: the
+last of it was deleted once its final callers moved up, so nothing outside
+`gen/prelude.zig` writes a syscall id by hand any more.
 
 So the marshalling is generated and the ergonomics are curated, and the two
 never mix:
@@ -92,12 +128,16 @@ That one constraint pays for the whole design:
    stubs and re-emits them as Zig. Signatures are lifted verbatim from
    `cimport.zig`, so no C-to-Zig type mapping happens and the types cannot drift
    from what the rest of the translated header believes.
-2. **Curate an area.** Take the raw wrappers plus their doxygen — 105 of the 120
+2. **Curate an area.** Take the raw wrappers plus their doxygen — 116 of the 120
    reachable syscalls carry a doc block, with `@param` semantics and `@retval`
    sets — and turn them into a Zig API. This is where taste goes.
 3. **`probe/<area>.zig`** — every curated entry point called once. Its job is to
    let `check.sh` prove the whole surface links against symbols the base image
-   exports.
+   exports, and to pin down anything a type signature alone does not say:
+   `probe/gpio.zig` switches on error sets exhaustively and asserts at comptime
+   that `led0` still carries its devicetree polarity. Call the API from inside
+   a function, not only at file scope — devicetree access reads differently in
+   the two, and only the probe will notice.
 4. **`gen/check.sh`** — tier purity, unresolved-syscall check, uncurated-usage
    report, coverage.
 
@@ -161,8 +201,8 @@ is which.
 Deliberately left for the curation step, because guessing produces a plausible
 API that is wrong:
 
-- **`c_int` is not always an errno.** Of the 51 int-returning syscalls here, 41
-  document an `-Exxx` set and 33 of those return literal `0` on success. The
+- **`c_int` is not always an errno.** Of the 57 int-returning syscalls here, 45
+  document an `-Exxx` set and 37 of those return literal `0` on success. The
   rest need eyes: `k_pipe_read` and `k_pipe_write` return a byte count,
   `k_futex_wake` a thread count, and `k_sleep`, `k_usleep`,
   `k_thread_priority_get`, `k_queue_is_empty`, `k_is_preempt_thread` and the
@@ -171,9 +211,6 @@ API that is wrong:
   reliably `*T`, but the buffer-and-length pairs (`k_pipe_read`,
   `k_thread_name_copy`, `k_stack_pop`) want a Zig slice, and pairing the
   arguments is a judgement call about parameter names.
-- **Error names.** `-EAGAIN` is "timed out" for `k_mutex_lock` and "timed out or
-  reset" for `k_sem_take`. Mechanical naming gets `error.Again`, which is worse
-  than either.
 
 ## Known gaps
 
