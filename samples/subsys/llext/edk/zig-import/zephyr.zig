@@ -23,7 +23,15 @@
 /// Curated APIs.
 pub const Event = @import("api/event.zig").Event;
 pub const Semaphore = @import("api/sem.zig").Semaphore;
+pub const Thread = @import("api/thread.zig").Thread;
 pub const Timeout = @import("api/timeout.zig").Timeout;
+
+/// Operations on the calling thread.
+pub const yield = @import("api/thread.zig").yield;
+pub const sleep = @import("api/thread.zig").sleep;
+pub const usleep = @import("api/thread.zig").usleep;
+pub const busyWait = @import("api/thread.zig").busyWait;
+pub const isPreemptible = @import("api/thread.zig").isPreemptible;
 
 pub const UnexpectedError = @import("api/errno.zig").UnexpectedError;
 
