@@ -9,7 +9,7 @@ pub fn start() callconv(.c) c_int {
         return 1;
     };
 
-    c.register_subscriber(c.CHAN_TICK, tick_evt.raw) catch unreachable;
+    z.app.subscribe(.tick, tick_evt) catch unreachable;
 
     if (!led.isReady()) {
         c.printk("[zig][ext1]LED is not ready!\n");
@@ -32,7 +32,7 @@ pub fn start() callconv(.c) c_int {
         _ = tick_evt.wait(c.CHAN_TICK, .{ .consume = false, .reset = true });
 
         c.printk("[zig][ext1]Got event, reading channel\n");
-        c.receive(c.CHAN_TICK, &l, @sizeOf(@TypeOf(l))) catch |err| switch (err) {
+        z.app.receive(.tick, &l) catch |err| switch (err) {
             error.BusyChannel => {
                 c.printk("[zig][k-ext1]Busy channel! Continuing...\n");
                 continue;

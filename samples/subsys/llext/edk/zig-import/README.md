@@ -36,6 +36,7 @@ never mix:
 | | what | who writes it | regenerated |
 |---|---|---|---|
 | **tier 1** | `zephyr.zig`, `api/*.zig` | maintainer, with LLM assistance | **never** |
+| **probes** | `probe/*.zig` | maintainer | never |
 | **tier 0** | `generated/syscalls.zig` | `gen/gen_syscalls.py` | **wholesale, every time** |
 | — | `generated/cimport.zig` | `zig translate-c` | build product, not committed |
 
@@ -181,11 +182,10 @@ API that is wrong:
   much Zig gets written. `k_timer_init` is likewise unexported, so a userspace
   ext can allocate a timer but not initialise it. Both need an app-side
   `__syscall` shim or upstream exports.
-- **`manual_imports.zig`** is the pre-tiering layer: hand-written wrappers that
-  marshal their own syscalls and are concatenated into `cimport.zig`. It shrinks
-  as areas are curated. Its `k_thread_create` still passes
-  `K_SYSCALL_K_THREAD_STACK_ALLOC` with the delay words swapped — a bug that
-  disappears when threads are curated, because tier 0 already gets it right.
+- **Callbacks** are the one structural limit. `gpio_add_callback` is not a
+  syscall and dereferences `dev->api`, so interrupt-with-callback GPIO is
+  kernel-extension only. A userspace extension polls, or waits on an event the
+  application posts for it.
 
 ## Running it
 
