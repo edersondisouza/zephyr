@@ -22,6 +22,8 @@
 
 /// Curated APIs.
 pub const Event = @import("api/event.zig").Event;
+pub const dt = @import("api/devicetree.zig");
+pub const gpio = @import("api/gpio.zig");
 pub const Semaphore = @import("api/sem.zig").Semaphore;
 pub const Thread = @import("api/thread.zig").Thread;
 pub const Timeout = @import("api/timeout.zig").Timeout;

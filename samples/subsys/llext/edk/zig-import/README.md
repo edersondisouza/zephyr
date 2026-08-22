@@ -124,6 +124,16 @@ Read the implementation before claiming the first two. `kernel/sem.c` is five
 lines of validation; asserting impossibility from the doxygen alone is how a
 wrong `unreachable` gets written.
 
+**Error sets are per operation, not per area.** Take each set from what that
+call's `@retval` block documents. Sharing one set across an area is tempting
+when the lists look similar and it is wrong in both directions at once: it
+advertises failures a call cannot produce, and it has no room for the ones it
+can. GPIO is the worked example -- a port access documents two errno values
+and configuring an interrupt documents six, and a shared set built for
+`gpio_pin_configure` silently turned `-EBUSY` and `-ENOSYS` into
+`error.Unexpected`. Name them after the operation (`Pin.InterruptError`), and
+let the probe switch on them exhaustively so a change has to be deliberate.
+
 **Errors name the situation, not the errno.** `-EAGAIN` is "timed out" for
 `k_mutex_lock` and "timed out or reset" for `k_sem_take`. Mechanical naming
 gives `error.Again`, which is worse than either.
