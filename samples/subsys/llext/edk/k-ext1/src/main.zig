@@ -13,18 +13,16 @@ var my_sem: z.Semaphore = undefined;
 const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led0"), "gpios");
 
 pub fn tick_sub(_: ?*anyopaque, _: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
-    const tick_evt = c.k_object_alloc(c.K_OBJ_EVENT, c.k_event) catch {
-        c.printk("[zig][k-ext1]k_object_alloc failed!\n");
+    const tick_evt = z.Event.alloc() catch {
+        c.printk("[zig][k-ext1]event alloc failed!\n");
         return;
     };
 
-    c.k_event_init(tick_evt);
-
-    c.register_subscriber(c.CHAN_TICK, tick_evt) catch unreachable;
+    c.register_subscriber(c.CHAN_TICK, tick_evt.raw) catch unreachable;
 
     while (true) {
         c.printk("[zig][k-ext1]Waiting event\n");
-        _ = c.k_event_wait(tick_evt, c.CHAN_TICK, true, K_FOREVER);
+        _ = tick_evt.wait(c.CHAN_TICK, .{ .consume = false, .reset = true });
         c.printk("[zig][k-ext1]Got event, giving sem\n");
         my_sem.give();
     }

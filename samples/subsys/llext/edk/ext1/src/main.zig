@@ -1,16 +1,15 @@
+const z = @import("zephyr");
 const c = @import("cimport");
 
 const led = c.GPIO_DT_SPEC_GET(c.DT_ALIAS("led1"), "gpios");
 
 pub fn start() callconv(.c) c_int {
-    const tick_evt: *c.k_event = c.k_object_alloc(c.K_OBJ_EVENT, c.k_event) catch {
-        c.printk("[zig][ext1]k_object_alloc failed!\n");
+    const tick_evt = z.Event.alloc() catch {
+        c.printk("[zig][ext1]event alloc failed!\n");
         return 1;
     };
 
-    c.k_event_init(tick_evt);
-
-    c.register_subscriber(c.CHAN_TICK, tick_evt) catch unreachable;
+    c.register_subscriber(c.CHAN_TICK, tick_evt.raw) catch unreachable;
 
     if (!c.gpio_is_ready_dt(&led)) {
         c.printk("[zig][ext1]LED is not ready!\n");
@@ -26,7 +25,11 @@ pub fn start() callconv(.c) c_int {
         var l: usize = undefined;
 
         c.printk("[zig][ext1]Waiting event\n");
-        _ = c.k_event_wait(tick_evt, c.CHAN_TICK, true, c.K_FOREVER);
+        // `.reset` keeps the original behaviour of dropping any tick that
+        // arrived while the previous one was being handled. `.{}` alone would
+        // consume just the matched event instead, which is the better default
+        // for new code.
+        _ = tick_evt.wait(c.CHAN_TICK, .{ .consume = false, .reset = true });
 
         c.printk("[zig][ext1]Got event, reading channel\n");
         c.receive(c.CHAN_TICK, &l, @sizeOf(@TypeOf(l))) catch |err| switch (err) {

@@ -102,32 +102,7 @@ pub fn k_object_alloc(otype: enum_k_objects, comptime T: type) !*T{
     return if (ret == 0) error.OutOfMemory else @ptrFromInt(ret);
 }
 
-pub fn k_event_init(event: *struct_k_event) void {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            _ = arch_syscall_invoke1(@intFromPtr(event), K_SYSCALL_K_EVENT_INIT);
-            return;
-        }
-    }
-
-    compiler_barrier();
-    z_impl_k_event_init(event);
-}
-
-pub fn k_event_wait(event: *struct_k_event, events: u32, reset: bool, timeout: k_timeout_t) u32 {
-    if (comptime CONFIG_USERSPACE == 1) {
-        if (z_syscall_trap()) {
-            const ticks: u64 = @bitCast(timeout.ticks);
-            const hi: u32 = @intCast(ticks >> 32);
-            const lo: u32 = @intCast(ticks & 0xffffffff);
-
-            return arch_syscall_invoke5(@intFromPtr(event), events, @intFromBool(reset), lo, hi, K_SYSCALL_K_EVENT_WAIT);
-        }
-    }
-
-    compiler_barrier();
-    return z_impl_k_event_wait(event, events, reset, timeout);
-}
+// k_event_* migrated to the curated layer: see zig-import/api/event.zig
 
 pub const SUCCESS = 0;
 
