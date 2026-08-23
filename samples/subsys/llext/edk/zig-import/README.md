@@ -140,6 +140,10 @@ That one constraint pays for the whole design:
    the two, and only the probe will notice.
 4. **`gen/check.sh`** — tier purity, unresolved-syscall check, uncurated-usage
    report, coverage.
+5. **`gen/check_exports.sh`** — after the application is linked, that every
+   symbol the extension relocates against is in the application's export
+   table. An extension references more than syscalls, and nothing else catches
+   a missing compiler runtime helper before `llext_load()` does, on the target.
 
 An application with its own `__syscall` declarations gets all of this for free:
 the sample's `publish` lands in the generated stubs alongside `k_sem_take`, so
