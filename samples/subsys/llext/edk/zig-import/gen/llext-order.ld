@@ -14,6 +14,16 @@
  * relocatable object; without that, ld lays the sections out consecutively and
  * leaves non-zero addresses behind.
  *
+ * .bss is folded into .data rather than kept separate, which costs image size
+ * -- the zeros are stored instead of implied -- and buys an MPU region. A
+ * memory domain gets as many partitions as the MPU has regions to spare, four
+ * on this board, and a userspace thread needs one of them for libc: TLS lives
+ * there, and z_thread_entry reads it before the extension runs at all. That
+ * leaves three for the extension, so it can have text, rodata and one of
+ * data/bss. Folding them means it can have both, as long as the zeroed data
+ * is small. An extension with a large .bss wants the opposite trade and
+ * should keep .bss separate and stay out of .data instead.
+ *
  * .exported_sym, .ARM.exidx and .ARM.attributes are left as orphans. llext
  * exempts the first from the overlap rule, and the packaging step strips the
  * second.
@@ -22,6 +32,5 @@ SECTIONS
 {
     .text   0 : { *(.text) *(.text.*) }
     .rodata 0 : { *(.rodata) *(.rodata.*) }
-    .data   0 : { *(.data) *(.data.*) }
-    .bss    0 : { *(.bss) *(.bss.*) *(COMMON) }
+    .data   0 : { *(.data) *(.data.*) *(.bss) *(.bss.*) *(COMMON) }
 }

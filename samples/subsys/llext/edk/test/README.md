@@ -71,16 +71,19 @@ on this board is four. An extension with all four section types -- text,
 rodata, data and bss -- uses every one of them by itself, and adding
 `z_libc_partition` on top fails with `no free partition slots available`.
 
-So the application adds the extension's own regions first, since those are what
-it cannot run without, and libc afterwards only if a slot remains. These
-extensions reference no libc at all -- their only undefined symbols are
-`z_impl_*`, `z_arm_thread_is_in_user_mode` and the `__aeabi_*` helpers, all of
-which are code in the image rather than libc data -- so losing that partition
-costs them nothing. An extension that does call libc would have to give up a
-section instead.
+libc is not optional, even for an extension that calls none: TLS lives in that
+partition and `z_thread_entry` reads it before the extension runs at all.
+Dropping it gets an MPU fault on `__aeabi_read_tp` rather than a load failure.
 
-This only became reachable once the section-ordering pass let extensions have
-a `.data` section at all; before that they had three regions and libc fit.
+So the extension gets three, and `gen/llext-order.ld` folds `.bss` into
+`.data` to fit: text, rodata, data. That stores the zeroed data in the image
+instead of implying it, which is the right trade only while the zeroed data is
+small. An extension with a large `.bss` wants the opposite -- keep `.bss` and
+stay out of `.data`.
+
+The application still adds the extension's own regions first and libc after,
+so if the budget is ever exceeded again the message says which one was lost
+rather than failing the load outright.
 
 ## Adding tests
 
