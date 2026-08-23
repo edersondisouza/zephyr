@@ -192,6 +192,51 @@ fn testClock() c_int {
     return 0;
 }
 
+// ---- queues ----------------------------------------------------------------
+
+const Item = struct { value: u32 };
+
+// Deliberately uninitialised: an initialised mutable global lands in .data,
+// and LLVM puts .data among the .rodata* sections, which llext refuses to load
+// -- see "Initialised mutable globals" in ../../zig-import/README.md.
+var items: [3]Item = undefined;
+
+fn testQueue() c_int {
+    items = .{ .{ .value = 10 }, .{ .value = 20 }, .{ .value = 30 } };
+
+    const q = z.Queue(Item).alloc() catch return 1;
+
+    if (!q.isEmpty()) return 2;
+    if (q.get(.no_wait) != null) return 3;
+
+    q.append(&items[0]) catch return 4;
+    q.append(&items[1]) catch return 5;
+    if (q.isEmpty()) return 6;
+
+    // Peeking does not take.
+    if ((q.peekHead() orelse return 7).value != 10) return 8;
+    if ((q.peekTail() orelse return 9).value != 20) return 10;
+    if ((q.peekHead() orelse return 11).value != 10) return 12;
+
+    // Append then get is first in, first out.
+    if ((q.get(.no_wait) orelse return 13).value != 10) return 14;
+    if ((q.get(.no_wait) orelse return 15).value != 20) return 16;
+    if (!q.isEmpty()) return 17;
+
+    // Prepend puts it in front of what is already queued.
+    q.append(&items[0]) catch return 18;
+    q.prepend(&items[2]) catch return 19;
+    if ((q.get(.no_wait) orelse return 20).value != 30) return 21;
+    if ((q.get(.no_wait) orelse return 22).value != 10) return 23;
+
+    // A timed get on an empty queue waits, then gives up.
+    const before = z.uptime();
+    if (q.get(.ms(30)) != null) return 24;
+    if (z.uptime() - before < 25) return 25;
+
+    return 0;
+}
+
 // ---- entry -----------------------------------------------------------------
 
 pub fn start() callconv(.c) c_int {
@@ -199,6 +244,7 @@ pub fn start() callconv(.c) c_int {
     app.report(.event, testEvent());
     app.report(.thread, testThread());
     app.report(.clock, testClock());
+    app.report(.queue, testQueue());
     return 0;
 }
 

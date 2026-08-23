@@ -21,6 +21,7 @@ extern "C" {
 		TEST_EVENT,
 		TEST_THREAD,
 		TEST_CLOCK,
+		TEST_QUEUE,
 		TEST_AREA_COUNT
 	};
 
