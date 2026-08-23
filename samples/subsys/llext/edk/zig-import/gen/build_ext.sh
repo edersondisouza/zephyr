@@ -58,10 +58,11 @@ echo "==> build $(basename "$SRC") -> $OUT"
     -Mcimport="$GENERATED/cimport.zig"
 
 # Collapse each llext region to one section. LLVM interleaves .data among the
-# .rodata* sections, which llext refuses to load; see gen/llext-order.ld.
+# .rodata* sections, which llext refuses to load; see $LLEXT_ORDER_LD.
 LD="${LD:-$(sdk_tool ld || true)}"
 [ -n "$LD" ] || { echo "no arm-zephyr-eabi-ld; set LD or ZEPHYR_SDK_INSTALL_DIR" >&2; exit 1; }
-"$LD" -r -T "$HERE/llext-order.ld" "$OUT.unordered" -o "$OUT"
+echo "==> order sections ($(basename "$LLEXT_ORDER_LD"))"
+"$LD" -r -T "$LLEXT_ORDER_LD" "$OUT.unordered" -o "$OUT"
 rm -f "$OUT.unordered"
 
 "$HERE/check.sh" "$SRC" "$OUT"

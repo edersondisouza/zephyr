@@ -57,3 +57,19 @@ else
 fi
 
 BOARD="$(grep -oE '^LLEXT_EDK_BOARD_TARGET *=.*' "$CFLAGS_MK" | cut -d= -f2- | tr -d ' "')"
+
+# Section ordering for the partial link that follows the compile.
+#
+# gen/llext-order.ld is what every extension needs and is board-independent.
+# A board that needs something else on top -- frdm_mcxn947 has to fold .bss
+# into .data to fit its MPU partition budget -- puts a script named after
+# itself in gen/boards/, and it is picked up automatically. Set
+# LLEXT_ORDER_LD to override.
+LLEXT_ORDER_LD_BOARD="$ZIG_IMPORT/gen/boards/${BOARD}.ld"
+if [ -z "${LLEXT_ORDER_LD:-}" ]; then
+    if [ -f "$LLEXT_ORDER_LD_BOARD" ]; then
+        LLEXT_ORDER_LD="$LLEXT_ORDER_LD_BOARD"
+    else
+        LLEXT_ORDER_LD="$ZIG_IMPORT/gen/llext-order.ld"
+    fi
+fi

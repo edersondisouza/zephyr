@@ -101,11 +101,31 @@ sections, so an extension with an initialised mutable global fails at
 `llext_load()` with `Region 1 ELF file range (...) overlaps with 2 (...)`. GCC
 groups them, which is why no C extension has ever hit this.
 
-So `gen/build_ext.sh` runs the object through a partial link
-(`ld -r -T gen/llext-order.ld`) that collapses each region to exactly one
-section. The regions are then contiguous by construction rather than by luck.
-`gen/check.sh` applies llext's own rule afterwards, so a change that
-reintroduces the problem fails the build rather than the load.
+What that costs is not "extensions cannot have `.data`" but something worse:
+whether an extension loads depends on where LLVM happened to put the section,
+which moves when unrelated code is edited. A probe written to reproduce the
+failure did not, because that time the order came out fine.
+
+So `gen/build_ext.sh` runs the object through a partial link that collapses
+each region to exactly one section. The regions are then contiguous by
+construction rather than by luck, and `gen/check.sh` applies llext's own rule
+afterwards, so a change that reintroduces the problem fails the build rather
+than the load.
+
+`gen/llext-order.ld` is what every extension needs, and is board-independent.
+A board that needs something else on top puts a script named after itself in
+`gen/boards/`, which is selected automatically from the EDK's own
+`LLEXT_EDK_BOARD_TARGET`; boards without one get the plain ordering.
+`LLEXT_ORDER_LD` overrides.
+
+`gen/boards/frdm_mcxn947_mcxn947_cpu0.ld` is the only one so far. It folds
+`.bss` into `.data`, because a memory domain on that board gets four MPU
+partitions and a userspace thread always spends one on libc -- TLS lives there
+and `z_thread_entry` reads it before the extension runs -- leaving three.
+Folding lets an extension have text, rodata, data *and* bss within them, at the
+cost of storing the zeroed data in the image rather than implying it. That is
+the wrong trade for an extension with a large `.bss`, which wants the plain
+ordering and to stay out of `.data` instead.
 
 ### The rule that holds it together
 
