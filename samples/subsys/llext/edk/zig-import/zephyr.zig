@@ -34,6 +34,11 @@ pub const sleep = @import("api/thread.zig").sleep;
 pub const usleep = @import("api/thread.zig").usleep;
 pub const busyWait = @import("api/thread.zig").busyWait;
 pub const isPreemptible = @import("api/thread.zig").isPreemptible;
+pub const isUserContext = @import("api/thread.zig").isUserContext;
+
+/// Uptime.
+pub const uptime = @import("api/clock.zig").uptime;
+pub const uptimeTicks = @import("api/clock.zig").uptimeTicks;
 
 pub const UnexpectedError = @import("api/errno.zig").UnexpectedError;
 /// Report a return code no wrapper models. Public so that bindings built on

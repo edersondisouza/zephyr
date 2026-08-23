@@ -12,6 +12,7 @@
 const std = @import("std");
 const c = @import("cimport");
 const syscall = @import("../generated/syscalls.zig");
+const p = @import("../gen/prelude.zig");
 const errno = @import("errno.zig");
 const Timeout = @import("timeout.zig").Timeout;
 
@@ -42,6 +43,13 @@ pub fn busyWait(us: u32) void {
 /// False when called from an ISR or a cooperative thread.
 pub fn isPreemptible() bool {
     return syscall.k_is_preempt_thread() != 0;
+}
+
+/// Whether this thread is running in userspace. Zephyr's k_is_user_context is
+/// an inline over the architecture check rather than a syscall, so it goes
+/// through the marshalling prelude directly.
+pub fn isUserContext() bool {
+    return p.arch_is_user_context();
 }
 
 // ---- threads ---------------------------------------------------------------
