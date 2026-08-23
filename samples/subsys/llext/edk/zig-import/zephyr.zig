@@ -21,9 +21,11 @@
 //! you find yourself reaching for it, that is the signal to curate the area.
 
 /// Curated APIs.
+pub const Condvar = @import("api/condvar.zig").Condvar;
 pub const Event = @import("api/event.zig").Event;
 pub const dt = @import("api/devicetree.zig");
 pub const gpio = @import("api/gpio.zig");
+pub const Mutex = @import("api/mutex.zig").Mutex;
 pub const Queue = @import("api/queue.zig").Queue;
 pub const Semaphore = @import("api/sem.zig").Semaphore;
 pub const Thread = @import("api/thread.zig").Thread;
