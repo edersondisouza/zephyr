@@ -89,8 +89,13 @@ pub fn arch_syscall_invoke6(arg1: usize, arg2: usize, arg3: usize, arg4: usize, 
           [arg3] "{r2}" (arg3),
           [arg4] "{r3}" (arg4),
           [arg5] "{r4}" (arg5),
-          [arg6] "{r12}" (arg6),
-        : .{ .r8 = true, .memory = true });
+          // r5, not r12. r12 is `ip`, which Zephyr's own trampoline lists as
+          // a clobber -- passing the sixth argument there means the kernel
+          // reads whatever r5 happened to hold. k_thread_create is the only
+          // arity-6 syscall the samples reach, and only from userspace, which
+          // is why this survived until something ran it.
+          [arg6] "{r5}" (arg6),
+        : .{ .r8 = true, .memory = true, .r12 = true });
 }
 
 // ---- trap decision ---------------------------------------------------------
