@@ -91,6 +91,24 @@ never mix:
 
 ### The rule that holds it together
 
+### One thing the build has to do to the object
+
+llext maps each region -- text, rodata, data -- as a single span from the
+lowest to the highest file offset of the sections in it, and refuses to load
+when two spans overlap. Section order is therefore load-bearing, and LLVM does
+not order them the way llext needs: it emits `.data` among the `.rodata*`
+sections, so an extension with an initialised mutable global fails at
+`llext_load()` with `Region 1 ELF file range (...) overlaps with 2 (...)`. GCC
+groups them, which is why no C extension has ever hit this.
+
+So `gen/build_ext.sh` runs the object through a partial link
+(`ld -r -T gen/llext-order.ld`) that collapses each region to exactly one
+section. The regions are then contiguous by construction rather than by luck.
+`gen/check.sh` applies llext's own rule afterwards, so a change that
+reintroduces the problem fails the build rather than the load.
+
+### The rule that holds it together
+
 **Curated code never marshals a syscall itself.** `gen/check.sh` fails the build
 if `arch_syscall_invoke` appears anywhere under `api/` or in the application's
 bindings.
@@ -232,16 +250,6 @@ API that is wrong:
   much Zig gets written. `k_timer_init` is likewise unexported, so a userspace
   ext can allocate a timer but not initialise it. Both need an app-side
   `__syscall` shim or upstream exports.
-- **Initialised mutable globals** put a `.data` section in the extension, and
-  LLVM emits it *between* the `.rodata*` sections. llext maps each region as a
-  single span from its lowest to its highest file offset and refuses to load
-  when two spans overlap, so such an extension fails at `llext_load()` with
-  `Region 1 ELF file range (...) overlaps with 2 (...)`. GCC does not
-  interleave, which is why C extensions do not hit this. `gen/check.sh` now
-  fails the build instead. Zero-initialised globals go to `.bss`, which llext
-  exempts, so `var x: T = undefined` and assigning at run time is the way
-  round it. Fixing it properly means imposing an order on the sections --
-  an `ld -r` pass with a script -- which has not been tried.
 - **Callbacks** are the one structural limit. `gpio_add_callback` is not a
   syscall and dereferences `dev->api`, so interrupt-with-callback GPIO is
   kernel-extension only. A userspace extension polls, or waits on an event the

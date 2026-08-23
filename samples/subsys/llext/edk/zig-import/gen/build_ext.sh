@@ -21,6 +21,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 source "$HERE/common.sh"
+# shellcheck source=sdk.sh
+source "$HERE/sdk.sh"
 
 SRC="${1:?usage: build_ext.sh <main.zig> [output.o]}"
 OUT="${2:-$(dirname "$SRC")/$(basename "${SRC%.zig}").o}"
@@ -49,10 +51,17 @@ fi
 echo "==> build $(basename "$SRC") -> $OUT"
 # shellcheck disable=SC2086
 "$ZIG" build-obj -target "$ZIG_TARGET" $ZIG_MCPU -OReleaseSmall \
-    -femit-bin="$OUT" \
+    -femit-bin="$OUT.unordered" \
     --dep zephyr --dep app --dep cimport -Mroot="$SRC" \
     --dep cimport -Mzephyr="$ZIG_IMPORT/zephyr.zig" \
     --dep zephyr --dep cimport -Mapp="$APP_API" \
     -Mcimport="$GENERATED/cimport.zig"
+
+# Collapse each llext region to one section. LLVM interleaves .data among the
+# .rodata* sections, which llext refuses to load; see gen/llext-order.ld.
+LD="${LD:-$(sdk_tool ld || true)}"
+[ -n "$LD" ] || { echo "no arm-zephyr-eabi-ld; set LD or ZEPHYR_SDK_INSTALL_DIR" >&2; exit 1; }
+"$LD" -r -T "$HERE/llext-order.ld" "$OUT.unordered" -o "$OUT"
+rm -f "$OUT.unordered"
 
 "$HERE/check.sh" "$SRC" "$OUT"

@@ -196,14 +196,13 @@ fn testClock() c_int {
 
 const Item = struct { value: u32 };
 
-// Deliberately uninitialised: an initialised mutable global lands in .data,
-// and LLVM puts .data among the .rodata* sections, which llext refuses to load
-// -- see "Initialised mutable globals" in ../../zig-import/README.md.
-var items: [3]Item = undefined;
+// Initialised on purpose. This is the only .data in either extension, and
+// .data is what LLVM emits among the .rodata* sections -- which llext refuses
+// to load unless gen/llext-order.ld has put the sections back in order. If
+// that pass ever stops running, this is what notices.
+var items = [_]Item{ .{ .value = 10 }, .{ .value = 20 }, .{ .value = 30 } };
 
 fn testQueue() c_int {
-    items = .{ .{ .value = 10 }, .{ .value = 20 }, .{ .value = 30 } };
-
     const q = z.Queue(Item).alloc() catch return 1;
 
     if (!q.isEmpty()) return 2;
