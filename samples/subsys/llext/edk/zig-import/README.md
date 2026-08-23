@@ -232,6 +232,16 @@ API that is wrong:
   much Zig gets written. `k_timer_init` is likewise unexported, so a userspace
   ext can allocate a timer but not initialise it. Both need an app-side
   `__syscall` shim or upstream exports.
+- **Initialised mutable globals** put a `.data` section in the extension, and
+  LLVM emits it *between* the `.rodata*` sections. llext maps each region as a
+  single span from its lowest to its highest file offset and refuses to load
+  when two spans overlap, so such an extension fails at `llext_load()` with
+  `Region 1 ELF file range (...) overlaps with 2 (...)`. GCC does not
+  interleave, which is why C extensions do not hit this. `gen/check.sh` now
+  fails the build instead. Zero-initialised globals go to `.bss`, which llext
+  exempts, so `var x: T = undefined` and assigning at run time is the way
+  round it. Fixing it properly means imposing an order on the sections --
+  an `ld -r` pass with a script -- which has not been tried.
 - **Callbacks** are the one structural limit. `gpio_add_callback` is not a
   syscall and dereferences `dev->api`, so interrupt-with-callback GPIO is
   kernel-extension only. A userspace extension polls, or waits on an event the

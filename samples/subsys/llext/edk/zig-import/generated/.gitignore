@@ -9,3 +9,4 @@ cimport.zig
 .curated.txt
 .undefined.txt
 .edk-stamp
+.regions
