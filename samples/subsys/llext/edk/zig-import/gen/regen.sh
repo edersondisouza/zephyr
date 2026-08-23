@@ -25,7 +25,8 @@ mkdir -p "$GENERATED"
 # cimport.zig that the next build would happily use.
 CIMPORT="$GENERATED/.cimport.zig.part"
 SYSCALLS="$GENERATED/.syscalls.zig.part"
-trap 'rm -f "$CIMPORT" "$SYSCALLS"' EXIT
+APP_SYSCALLS="$GENERATED/.app-syscalls.zig.part"
+trap 'rm -f "$CIMPORT" "$SYSCALLS" "$APP_SYSCALLS"' EXIT
 
 echo "==> EDK board: ${BOARD:-unknown}   mcpu: ${GCC_MCPU:-default}"
 
@@ -52,13 +53,25 @@ echo "==> depfile"
 
 echo "==> generate generated/syscalls.zig"
 IMPORTS_DEPFILE="$GENERATED/.imports.d" SCOPE_OUT="$GENERATED/.syscalls.txt" \
+    APP_SYSCALL_HEADERS="$APP_SYSCALL_HEADERS" \
     python3 "$HERE/gen_syscalls.py" "$CIMPORT" > "$SYSCALLS"
+
+# The application's own syscalls, in their own file beside the application.
+# They reach the svc trampolines through the curated layer's public `abi`,
+# which is the only part of this an out-of-tree binding author needs.
+echo "==> generate $(basename "$(dirname "$(dirname "$APP_GENERATED")")")/generated/syscalls.zig"
+mkdir -p "$(dirname "$APP_GENERATED")"
+IMPORTS_DEPFILE="$GENERATED/.imports.d" \
+    APP_SYSCALL_HEADERS="$APP_SYSCALL_HEADERS" EMIT=app \
+    PRELUDE_IMPORT='@import("zephyr").abi' \
+    python3 "$HERE/gen_syscalls.py" "$CIMPORT" > "$APP_SYSCALLS"
 
 # ---- 3. publish ------------------------------------------------------------
 
 mv -f "$CIMPORT" "$GENERATED/cimport.zig"
 mv -f "$SYSCALLS" "$GENERATED/syscalls.zig"
+mv -f "$APP_SYSCALLS" "$APP_GENERATED"
 trap - EXIT
 
 echo "==> done"
-wc -l "$GENERATED/cimport.zig" "$GENERATED/syscalls.zig"
+wc -l "$GENERATED/cimport.zig" "$GENERATED/syscalls.zig" "$APP_GENERATED"

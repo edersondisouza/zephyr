@@ -227,10 +227,10 @@ HEADER = """\
 //! curated yet, and `gen/check.sh` reports every such use as curation work
 //! still to do.
 //!
-//! Provenance: {board}, {count} syscalls, from {edk_rel}
+//! Provenance: {board}, {count} syscalls from {origin}
 
 const c = @import("cimport");
-const p = @import("../gen/prelude.zig");
+const p = {prelude};
 """
 
 
@@ -248,6 +248,17 @@ def main():
     stubs = parse_stubs(only)
     cim, known = parse_cimport(sys.argv[1])
 
+    # An application's own __syscall declarations land in the EDK next to
+    # Zephyr's, but they are not Zephyr's and they differ from application to
+    # application. Split them out by the header their stub came from, so the
+    # Zephyr layer is the same file for every application and each application
+    # keeps its own beside itself.
+    app_headers = {h.strip() for h in os.environ.get("APP_SYSCALL_HEADERS", "").split(",") if h.strip()}
+    want_app = os.environ.get("EMIT") == "app"
+    if app_headers:
+        stubs = {k: v for k, v in stubs.items()
+                 if (v["header"] in app_headers) == want_app}
+
     reachable = {k: v for k, v in stubs.items() if k in cim}
     ok, fail = [], {}
     for name in sorted(reachable):
@@ -264,8 +275,11 @@ def main():
         if m:
             board = m.group(1).strip('"')
 
-    print(HEADER.format(board=board, count=len(ok),
-                        edk_rel="include/generated/zephyr/syscalls/*.h"))
+    origin = (", ".join(sorted(app_headers)) if want_app
+              else "include/generated/zephyr/syscalls/*.h")
+    print(HEADER.format(board=board, count=len(ok), origin=origin,
+                        prelude=os.environ.get("PRELUDE_IMPORT",
+                                               '@import("../gen/prelude.zig")')))
     print("\n\n".join(ok))
 
     scope_out = os.environ.get("SCOPE_OUT")

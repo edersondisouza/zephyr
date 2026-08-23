@@ -27,8 +27,10 @@ rc=0
 # rather than a silent misbehaviour on target, and it is why an LLM-assisted
 # curation pass cannot introduce a wrong-syscall-id bug.
 
-OFFENDERS="$(grep -rln 'arch_syscall_invoke' "$ZIG_IMPORT/api" "$APP_API_DIR" \
-    "$ZIG_IMPORT/zephyr.zig" 2>/dev/null || true)"
+# generated/ is excluded on both sides: a generated layer marshalling
+# syscalls is its whole job. This is about the curated code above it.
+OFFENDERS="$(grep -rln --exclude-dir=generated 'arch_syscall_invoke' \
+    "$ZIG_IMPORT/api" "$APP_API_DIR" "$ZIG_IMPORT/zephyr.zig" 2>/dev/null || true)"
 if [ -n "$OFFENDERS" ]; then
     echo "==> ERROR: curated code marshals syscalls directly:" >&2
     printf '      %s\n' $OFFENDERS >&2
@@ -79,8 +81,8 @@ fi
 # ---- 4. coverage (advisory) ------------------------------------------------
 
 if [ -f "$SYSCALLS" ]; then
-    grep -rhoP '(?<=\bsyscall\.)\w+' "$ZIG_IMPORT/api" "$APP_API_DIR" 2>/dev/null \
-        | sort -u > "$GENERATED/.curated.txt"
+    grep -rhoP --exclude-dir=generated '(?<=\bsyscall\.)\w+' \
+        "$ZIG_IMPORT/api" "$APP_API_DIR" 2>/dev/null | sort -u > "$GENERATED/.curated.txt"
     CURATED="$(comm -12 "$SYSCALLS" "$GENERATED/.curated.txt" | wc -l)"
     TOTAL="$(wc -l < "$SYSCALLS")"
     echo "==> coverage: $CURATED of $TOTAL reachable syscalls have a curated API"

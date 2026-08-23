@@ -41,7 +41,12 @@ pub const UnexpectedError = @import("api/errno.zig").UnexpectedError;
 /// same thing the same way.
 pub const unexpected = @import("api/errno.zig").unexpected;
 
-/// Escape hatch: every syscall the extension API can reach, exactly as the C
-/// stub marshals it. ABI-correct and safe to call, but C-shaped -- reaching
+/// The svc trampolines and marshalling helpers the generated layer is built
+/// on. Public because an application generating its own syscall layer needs
+/// somewhere to call into -- see `app/zig/generated/`.
+pub const abi = @import("gen/prelude.zig");
+
+/// Escape hatch: every Zephyr syscall the extension API can reach, exactly as
+/// the C stub marshals it. ABI-correct and safe to call, but C-shaped -- reaching
 /// for it means the area needs curating.
 pub const uncurated = @import("generated/syscalls.zig");

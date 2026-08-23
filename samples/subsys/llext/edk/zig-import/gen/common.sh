@@ -19,6 +19,13 @@ IMPORTS_H="${IMPORTS_H:-$ZIG_IMPORT/imports.h}"
 # this at its own tree.
 APP_API="${APP_API:-$ZIG_IMPORT/../app/zig/pubsub.zig}"
 
+# Headers whose __syscall declarations belong to the application rather than
+# to Zephyr, and where that application's generated layer is written. Split
+# out so that the Zephyr layer is one shared file no matter which application
+# built the EDK.
+APP_SYSCALL_HEADERS="${APP_SYSCALL_HEADERS:-app_api.h}"
+APP_GENERATED="${APP_GENERATED:-$(dirname "$APP_API")/generated/syscalls.zig}"
+
 : "${LLEXT_EDK_INSTALL_DIR:?set LLEXT_EDK_INSTALL_DIR to the extracted llext-edk directory}"
 CFLAGS_MK="$LLEXT_EDK_INSTALL_DIR/Makefile.cflags"
 [ -f "$CFLAGS_MK" ] || { echo "no Makefile.cflags under $LLEXT_EDK_INSTALL_DIR" >&2; exit 1; }

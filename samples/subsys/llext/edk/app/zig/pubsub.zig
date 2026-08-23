@@ -16,13 +16,14 @@
 //! zephyr module's root directory -- Zig will not have one file belong to
 //! two modules.
 //!
-//! `zephyr.uncurated` is named for an extension author, for whom it means
-//! "not curated yet". For a binding author it is simply the generated
-//! marshalling layer, and calling it is the job.
+//! Its syscalls are generated the same way Zephyr's are, by the same script,
+//! into `generated/` beside this file -- an application's own `__syscall`
+//! declarations are not Zephyr's and do not belong in Zephyr's layer, which
+//! has to stay the same file whichever application built the EDK.
 
 const z = @import("zephyr");
 const c = @import("cimport");
-const syscall = z.uncurated;
+const syscall = @import("generated/syscalls.zig");
 const Event = z.Event;
 
 /// The channels the application defines.
