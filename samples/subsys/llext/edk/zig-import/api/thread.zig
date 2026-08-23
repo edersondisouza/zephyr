@@ -115,9 +115,6 @@ pub const Thread = struct {
         flags: u32 = 0,
         /// When the thread begins running.
         start: Start = .now,
-        /// Flags for the stack allocation itself, e.g. `c.K_USER` for a stack
-        /// a userspace thread can use.
-        stack_flags: i32 = 0,
     };
 
     pub const SpawnError = error{OutOfMemory};
@@ -203,7 +200,15 @@ pub const Thread = struct {
     /// Spawn a thread using Zephyr's three-argument entry signature, for the
     /// cases the typed forms above cannot express.
     pub fn spawnRaw(entry: Entry, args: [3]?*anyopaque, opts: Options) SpawnError!Thread {
-        const stack = syscall.k_thread_stack_alloc(opts.stack_size, opts.stack_flags);
+        // The stack allocation takes its own flag word, and the only bit it
+        // reads is K_USER: with it, z_thread_stack_alloc_dyn registers the
+        // stack as a kernel object, and without it the stack is plain heap.
+        // A user thread given a plain-heap stack fails k_thread_create's
+        // validation with "not a valid z_thread_stack_element". The two flag
+        // words always have to agree on that bit, so this derives one from
+        // the other rather than leaving a second field to keep in step.
+        const stack_flags: c_int = if (opts.flags & c.K_USER != 0) c.K_USER else 0;
+        const stack = syscall.k_thread_stack_alloc(opts.stack_size, stack_flags);
         if (stack == null) return error.OutOfMemory;
         errdefer _ = syscall.k_thread_stack_free(stack);
 
