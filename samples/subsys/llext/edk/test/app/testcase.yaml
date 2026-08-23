@@ -1,0 +1,13 @@
+common:
+  tags:
+    - llext
+    - edk
+    - zig
+  arch_allow:
+    - arm
+  filter: CONFIG_ARCH_HAS_USERSPACE
+tests:
+  llext.edk.zig.bindings:
+    # The extensions are built out of tree, against the EDK this application
+    # produces, so twister cannot build this in one pass. See ../build.sh.
+    build_only: true
