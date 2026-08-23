@@ -64,6 +64,24 @@ Zephyr's own generated layer is shared with the showcase and is not rewritten
 by this build (`REGEN_ZEPHYR=0`); only this application's own syscall layer,
 under `app/zig/generated/`, belongs to it.
 
+## The MPU partition budget
+
+A memory domain gets as many partitions as the MPU has regions to spare, which
+on this board is four. An extension with all four section types -- text,
+rodata, data and bss -- uses every one of them by itself, and adding
+`z_libc_partition` on top fails with `no free partition slots available`.
+
+So the application adds the extension's own regions first, since those are what
+it cannot run without, and libc afterwards only if a slot remains. These
+extensions reference no libc at all -- their only undefined symbols are
+`z_impl_*`, `z_arm_thread_is_in_user_mode` and the `__aeabi_*` helpers, all of
+which are code in the image rather than libc data -- so losing that partition
+costs them nothing. An extension that does call libc would have to give up a
+section instead.
+
+This only became reachable once the section-ordering pass let extensions have
+a `.data` section at all; before that they had three regions and libc fit.
+
 ## Adding tests
 
 Add an area to `enum test_area` in `app/include/test_api.h`, a matching member

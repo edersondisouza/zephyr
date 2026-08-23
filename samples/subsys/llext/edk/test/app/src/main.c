@@ -98,15 +98,23 @@ static int run_extension(enum test_context context, const char *name,
 
 	ret = k_mem_domain_init(&ext_domain, 0, NULL);
 	if (ret == 0) {
-		ret = k_mem_domain_add_partition(&ext_domain, &z_libc_partition);
-	}
-	if (ret == 0) {
 		ret = llext_add_domain(ext, &ext_domain);
 	}
 	if (ret != 0) {
 		printk("[test]%s domain setup failed (%d)\n", name, ret);
 		llext_unload(&ext);
 		return ret;
+	}
+
+	/*
+	 * libc last, and only if there is room. A domain gets as many MPU
+	 * partitions as the hardware has regions to spare -- four on this
+	 * board -- and an extension with text, rodata, data and bss uses all
+	 * of them by itself. Its own regions are what it cannot run without;
+	 * libc it can, as long as it does not call any.
+	 */
+	if (k_mem_domain_add_partition(&ext_domain, &z_libc_partition) != 0) {
+		printk("[test]%s: no MPU partition left for libc\n", name);
 	}
 
 	if (context == TEST_CONTEXT_USER) {
