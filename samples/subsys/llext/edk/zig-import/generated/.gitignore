@@ -8,3 +8,4 @@ cimport.zig
 .syscalls.txt
 .curated.txt
 .undefined.txt
+.edk-stamp

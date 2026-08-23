@@ -25,9 +25,26 @@ source "$HERE/common.sh"
 SRC="${1:?usage: build_ext.sh <main.zig> [output.o]}"
 OUT="${2:-$(dirname "$SRC")/$(basename "${SRC%.zig}").o}"
 
-for f in "$GENERATED/cimport.zig" "$GENERATED/syscalls.zig"; do
-    [ -f "$f" ] || { echo "missing $f -- run gen/regen.sh first" >&2; exit 1; }
-done
+[ -f "$GENERATED/syscalls.zig" ] || {
+    echo "missing $GENERATED/syscalls.zig -- run gen/regen.sh first" >&2
+    exit 1
+}
+
+# cimport.zig is a build product -- 15 MB of translate-c output with no review
+# value -- so a fresh checkout produces it on the first build. It is also
+# per-application, and applications share this directory, so it is regenerated
+# whenever what is here came from a different EDK or a different API surface.
+# Left alone that mismatch is silent: the wrong cimport.zig still compiles, it
+# just describes the wrong application.
+STAMP="$GENERATED/.edk-stamp"
+WANT="$(printf '%s\n%s\n' "$LLEXT_EDK_INSTALL_DIR" "$IMPORTS_H")"
+if [ ! -f "$GENERATED/cimport.zig" ]; then
+    echo "==> no generated/cimport.zig yet; running gen/regen.sh"
+    "$HERE/regen.sh"
+elif [ ! -f "$STAMP" ] || [ "$WANT" != "$(cat "$STAMP")" ]; then
+    echo "==> generated/cimport.zig is from another build; running gen/regen.sh"
+    "$HERE/regen.sh"
+fi
 
 echo "==> build $(basename "$SRC") -> $OUT"
 # shellcheck disable=SC2086

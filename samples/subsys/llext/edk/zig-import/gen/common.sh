@@ -10,7 +10,7 @@ ZIG_TARGET="${ZIG_TARGET:-thumb-freestanding-eabi}"
 
 ZIG_IMPORT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GENERATED="$ZIG_IMPORT/generated"
-IMPORTS_H="${IMPORTS_H:-$ZIG_IMPORT/imports.h}"
+IMPORTS_H="${IMPORTS_H:-$ZIG_IMPORT/../app/zig/imports.h}"
 
 # The application's own bindings. Deliberately outside ZIG_IMPORT: they are
 # not Zephyr's, they are not the Zephyr maintainer's to keep working, and

@@ -19,16 +19,6 @@ SRC="${1:?usage: build_llext.sh <main.zig> <output-dir> <name>}"
 OUTDIR="${2:?usage: build_llext.sh <main.zig> <output-dir> <name>}"
 NAME="${3:?usage: build_llext.sh <main.zig> <output-dir> <name>}"
 
-# generated/cimport.zig is a build product -- 15 MB of translate-c output with
-# no review value -- so a fresh checkout has to produce it once. The same step
-# rewrites the committed generated/syscalls.zig; if git then reports that file
-# as modified, the EDK's syscalls have changed and the curated layer wants a
-# look before you commit it.
-if [ ! -f "$ZIG_IMPORT/generated/cimport.zig" ]; then
-    echo "==> no generated/cimport.zig yet; running gen/regen.sh"
-    "$HERE/regen.sh"
-fi
-
 mkdir -p "$OUTDIR"
 "$HERE/build_ext.sh" "$SRC" "$OUTDIR/main.o"
 

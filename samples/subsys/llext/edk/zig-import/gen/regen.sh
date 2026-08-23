@@ -51,10 +51,21 @@ echo "==> depfile"
 "$ZIG" cc -target "$ZIG_TARGET" $INCLUDES $DEFINES $ZIG_MCPU \
     -M -MF "$GENERATED/.imports.d" -E "$IMPORTS_H" -o /dev/null
 
-echo "==> generate generated/syscalls.zig"
-IMPORTS_DEPFILE="$GENERATED/.imports.d" SCOPE_OUT="$GENERATED/.syscalls.txt" \
-    APP_SYSCALL_HEADERS="$APP_SYSCALL_HEADERS" \
-    python3 "$HERE/gen_syscalls.py" "$CIMPORT" > "$SYSCALLS"
+# The Zephyr layer is shared by every application, so a second application
+# regenerating it would churn a committed file for no reason -- and if its
+# Kconfig differs, would quietly narrow it for everyone. Applications other
+# than the one it was generated from set REGEN_ZEPHYR=0 and use it as-is; if
+# they reference a syscall their own EDK lacks, that is a compile error rather
+# than something to discover later.
+if [ "${REGEN_ZEPHYR:-1}" = "1" ]; then
+    echo "==> generate generated/syscalls.zig"
+    IMPORTS_DEPFILE="$GENERATED/.imports.d" SCOPE_OUT="$GENERATED/.syscalls.txt" \
+        APP_SYSCALL_HEADERS="$APP_SYSCALL_HEADERS" \
+        python3 "$HERE/gen_syscalls.py" "$CIMPORT" > "$SYSCALLS"
+else
+    echo "==> keep generated/syscalls.zig (REGEN_ZEPHYR=0)"
+    cp "$GENERATED/syscalls.zig" "$SYSCALLS"
+fi
 
 # The application's own syscalls, in their own file beside the application.
 # They reach the svc trampolines through the curated layer's public `abi`,
@@ -69,6 +80,10 @@ IMPORTS_DEPFILE="$GENERATED/.imports.d" \
 # ---- 3. publish ------------------------------------------------------------
 
 mv -f "$CIMPORT" "$GENERATED/cimport.zig"
+# Which EDK and which API surface this cimport.zig came from. cimport.zig is
+# per-application, and two applications share this directory, so a build has
+# to be able to tell that what is here is not what it wants.
+printf '%s\n%s\n' "$LLEXT_EDK_INSTALL_DIR" "$IMPORTS_H" > "$GENERATED/.edk-stamp"
 mv -f "$SYSCALLS" "$GENERATED/syscalls.zig"
 mv -f "$APP_SYSCALLS" "$APP_GENERATED"
 trap - EXIT
