@@ -25,6 +25,7 @@ pub const Condvar = @import("api/condvar.zig").Condvar;
 pub const Event = @import("api/event.zig").Event;
 pub const dt = @import("api/devicetree.zig");
 pub const gpio = @import("api/gpio.zig");
+pub const MessageQueue = @import("api/msgq.zig").MessageQueue;
 pub const Mutex = @import("api/mutex.zig").Mutex;
 pub const Queue = @import("api/queue.zig").Queue;
 pub const Semaphore = @import("api/sem.zig").Semaphore;
