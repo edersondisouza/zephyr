@@ -359,6 +359,85 @@ fn testCondvar() c_int {
     return 0;
 }
 
+// ---- message queues --------------------------------------------------------
+
+const Tick = struct { seq: u32, value: i32 };
+
+fn testMessageQueue() c_int {
+    const q = z.MessageQueue(Tick).alloc(3) catch return 1;
+
+    if (q.capacity() != 3) return 2;
+    if (q.available() != 3) return 3;
+    if (q.used() != 0) return 4;
+    if (q.peek() != null) return 5;
+
+    if (q.get(.no_wait)) |_| {
+        return 6;
+    } else |err| switch (err) {
+        error.EmptyOrPurged => {},
+        error.TimedOut, error.Unexpected => return 7,
+    }
+
+    q.put(.{ .seq = 1, .value = 10 }, .no_wait) catch return 8;
+    q.put(.{ .seq = 2, .value = 20 }, .no_wait) catch return 9;
+    if (q.used() != 2) return 10;
+    if (q.available() != 1) return 11;
+
+    // Peeking does not take, and indexes from the front.
+    if ((q.peek() orelse return 12).seq != 1) return 13;
+    if (q.used() != 2) return 14;
+    if ((q.peekAt(1) orelse return 15).seq != 2) return 16;
+    if (q.peekAt(2) != null) return 17;
+
+    // putFront jumps the queue, and the whole message is copied.
+    q.putFront(.{ .seq = 99, .value = -1 }) catch return 18;
+    if (q.used() != 3) return 19;
+    const first = q.get(.no_wait) catch return 20;
+    if (first.seq != 99) return 21;
+    if (first.value != -1) return 22;
+
+    // A full queue refuses immediately when told not to wait...
+    q.put(.{ .seq = 3, .value = 30 }, .no_wait) catch return 23;
+    if (q.available() != 0) return 24;
+    if (q.put(.{ .seq = 4, .value = 40 }, .no_wait)) |_| {
+        return 25;
+    } else |err| switch (err) {
+        error.FullOrPurged => {},
+        error.TimedOut, error.Unexpected => return 26,
+    }
+
+    // ...and waits before giving up when it is.
+    const before = z.uptime();
+    if (q.put(.{ .seq = 4, .value = 40 }, .ms(30))) |_| {
+        return 27;
+    } else |err| switch (err) {
+        error.TimedOut => {},
+        error.FullOrPurged, error.Unexpected => return 28,
+    }
+    if (z.uptime() - before < 25) return 29;
+
+    // What is left comes back in order.
+    if ((q.get(.no_wait) catch return 30).seq != 1) return 31;
+    if ((q.get(.no_wait) catch return 32).seq != 2) return 33;
+    if ((q.get(.no_wait) catch return 34).seq != 3) return 35;
+
+    q.put(.{ .seq = 5, .value = 50 }, .no_wait) catch return 36;
+    q.purge();
+    if (q.used() != 0) return 37;
+    if (q.peek() != null) return 38;
+
+    // The overflow the header does not document: message size times count
+    // has to fit in a size_t.
+    if (z.MessageQueue(Tick).alloc(0xFFFF_FFFF)) |_| {
+        return 39;
+    } else |err| switch (err) {
+        error.TooLarge => {},
+        error.OutOfMemory => return 40,
+    }
+
+    return 0;
+}
+
 // ---- entry -----------------------------------------------------------------
 
 pub fn start() callconv(.c) c_int {
@@ -369,6 +448,7 @@ pub fn start() callconv(.c) c_int {
     app.report(.queue, testQueue());
     app.report(.mutex, testMutex());
     app.report(.condvar, testCondvar());
+    app.report(.msgq, testMessageQueue());
     return 0;
 }
 

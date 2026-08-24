@@ -24,6 +24,7 @@ extern "C" {
 		TEST_QUEUE,
 		TEST_MUTEX,
 		TEST_CONDVAR,
+		TEST_MSGQ,
 		TEST_AREA_COUNT
 	};
 
