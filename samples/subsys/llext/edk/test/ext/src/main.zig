@@ -122,18 +122,21 @@ fn bump(target: *u32, by: u32) void {
     target.* += by;
 }
 
-fn testThread() c_int {
-    // A userspace extension can only create userspace threads.
-    const flags: u32 = if (z.isUserContext())
-        c.K_USER | c.K_INHERIT_PERMS
-    else
-        c.K_INHERIT_PERMS;
-
-    const opts: z.Thread.Options = .{
+/// A userspace extension can only create userspace threads, and the same
+/// source is built for both contexts.
+fn threadOptions(priority: i32) z.Thread.Options {
+    return .{
         .stack_size = 2048,
-        .priority = 3,
-        .flags = flags,
+        .priority = priority,
+        .flags = if (z.isUserContext())
+            c.K_USER | c.K_INHERIT_PERMS
+        else
+            c.K_INHERIT_PERMS,
     };
+}
+
+fn testThread() c_int {
+    const opts = threadOptions(3);
 
     counter = 0;
     const ran = z.Thread.spawn(bump, .{ &counter, @as(u32, 7) }, opts) catch return 1;
@@ -236,6 +239,126 @@ fn testQueue() c_int {
     return 0;
 }
 
+// ---- mutexes ---------------------------------------------------------------
+
+var contended: z.Mutex = undefined;
+var holder_took: z.Semaphore = undefined;
+var holder_release: z.Semaphore = undefined;
+
+fn holdMutex() void {
+    contended.lock(.forever) catch return;
+    holder_took.give();
+    holder_release.take(.forever) catch {};
+    contended.unlock() catch {};
+}
+
+fn testMutex() c_int {
+    const m = z.Mutex.alloc() catch return 1;
+
+    m.lock(.forever) catch return 2;
+    // Zephyr's mutex is recursive, unlike std.Thread.Mutex: the owner may
+    // lock it again, and each lock needs its own unlock.
+    m.lock(.forever) catch return 3;
+    m.unlock() catch return 4;
+    m.unlock() catch return 5;
+
+    // Now that it is free, unlocking again is an error rather than a no-op.
+    if (m.unlock()) |_| {
+        return 6;
+    } else |err| switch (err) {
+        error.NotLocked => {},
+        error.NotOwner, error.Unexpected => return 7,
+    }
+
+    m.tryLock() catch return 8;
+    m.unlock() catch return 9;
+
+    // Contention needs a second thread, since a recursive mutex cannot block
+    // against itself.
+    contended = z.Mutex.alloc() catch return 10;
+    holder_took = z.Semaphore.alloc(0, 1) catch return 11;
+    holder_release = z.Semaphore.alloc(0, 1) catch return 12;
+
+    const holder = z.Thread.spawn(holdMutex, .{}, threadOptions(3)) catch return 13;
+    holder_took.take(.seconds(1)) catch return 14;
+
+    if (contended.tryLock()) |_| {
+        return 15;
+    } else |err| switch (err) {
+        error.WouldBlock => {},
+    }
+
+    const before = z.uptime();
+    if (contended.lock(.ms(30))) |_| {
+        return 16;
+    } else |err| switch (err) {
+        error.TimedOut => {},
+        error.WouldBlock, error.Unexpected => return 17,
+    }
+    if (z.uptime() - before < 25) return 18;
+
+    holder_release.give();
+    holder.join(.seconds(1)) catch return 19;
+    holder.destroy() catch return 20;
+
+    // Free again once the holder has gone.
+    contended.lock(.no_wait) catch return 21;
+    contended.unlock() catch return 22;
+
+    return 0;
+}
+
+// ---- condition variables ---------------------------------------------------
+
+var cv_mutex: z.Mutex = undefined;
+var cv: z.Condvar = undefined;
+var cv_ready: u32 = undefined;
+
+fn signalCondvar() void {
+    _ = z.sleep(.ms(20));
+    cv_mutex.lock(.forever) catch return;
+    cv_ready = 1;
+    cv.signal();
+    cv_mutex.unlock() catch {};
+}
+
+fn testCondvar() c_int {
+    cv_mutex = z.Mutex.alloc() catch return 1;
+    cv = z.Condvar.alloc() catch return 2;
+    cv_ready = 0;
+
+    // Nothing is waiting, so broadcast wakes nobody. It reports a count, not
+    // a status.
+    if (cv.broadcast() != 0) return 3;
+
+    const signaller = z.Thread.spawn(signalCondvar, .{}, threadOptions(3)) catch return 4;
+
+    cv_mutex.lock(.forever) catch return 5;
+    while (cv_ready == 0) {
+        // The mutex is released while waiting and held again on return, which
+        // is what lets the signaller take it.
+        cv.wait(cv_mutex, .seconds(1)) catch return 6;
+    }
+    cv_mutex.unlock() catch return 7;
+
+    signaller.join(.seconds(1)) catch return 8;
+    signaller.destroy() catch return 9;
+
+    // With nobody to signal, a wait gives up when told to.
+    cv_mutex.lock(.forever) catch return 10;
+    const before = z.uptime();
+    if (cv.wait(cv_mutex, .ms(30))) |_| {
+        return 11;
+    } else |err| switch (err) {
+        error.TimedOut => {},
+        error.Unexpected => return 12,
+    }
+    if (z.uptime() - before < 25) return 13;
+    cv_mutex.unlock() catch return 14;
+
+    return 0;
+}
+
 // ---- entry -----------------------------------------------------------------
 
 pub fn start() callconv(.c) c_int {
@@ -244,6 +367,8 @@ pub fn start() callconv(.c) c_int {
     app.report(.thread, testThread());
     app.report(.clock, testClock());
     app.report(.queue, testQueue());
+    app.report(.mutex, testMutex());
+    app.report(.condvar, testCondvar());
     return 0;
 }
 

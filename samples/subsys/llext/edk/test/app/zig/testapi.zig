@@ -17,6 +17,8 @@ pub const Area = enum(c.enum_test_area) {
     thread = c.TEST_THREAD,
     clock = c.TEST_CLOCK,
     queue = c.TEST_QUEUE,
+    mutex = c.TEST_MUTEX,
+    condvar = c.TEST_CONDVAR,
 };
 
 /// Report the outcome of one area: zero if it passed, otherwise the number of
