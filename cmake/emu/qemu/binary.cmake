@@ -34,6 +34,28 @@ else()
   set_ifndef(QEMU_BINARY_SUFFIX ${ARCH})
 endif()
 
+function(qemu_validator result_var prog)
+    if(CONFIG_BOARD_QEMU_X86_64_KVM)
+    message(STATUS "Validating QEMU x86 binary ${prog} for KVM support...")
+    execute_process(
+      COMMAND ${prog} -display none --enable-kvm -kernel /dev/null
+      RESULT_VARIABLE qemu_validator_result
+      OUTPUT_VARIABLE qemu_validator_output
+      ERROR_VARIABLE qemu_validator_error
+      TIMEOUT 1
+    )
+    if("${qemu_validator_error}" MATCHES "kvm")
+      set(${result_var} FALSE PARENT_SCOPE)
+      message(STATUS "QEMU binary ${prog} does not support KVM.")
+    else()
+      set(${result_var} TRUE PARENT_SCOPE)
+      message(STATUS "QEMU binary ${prog} supports KVM.")
+    endif()
+  else()
+    set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
 set(qemu_alternate_path $ENV{QEMU_BIN_PATH})
 if(qemu_alternate_path)
   find_program(
@@ -41,11 +63,13 @@ if(qemu_alternate_path)
     PATHS ${qemu_alternate_path}
     NO_DEFAULT_PATH
     NAMES qemu-system-${QEMU_BINARY_SUFFIX}
+    VALIDATOR qemu_validator
   )
 else()
   find_program(
     QEMU
     qemu-system-${QEMU_BINARY_SUFFIX}
+    VALIDATOR qemu_validator
   )
 endif()
 
