@@ -284,9 +284,27 @@ API that is wrong:
   for kernel extensions and each is a small comptime function.
 - **Work queues** have no syscalls *and* no `EXPORT_SYMBOL` anywhere in the
   tree, so they are unreachable from a userspace extension regardless of how
-  much Zig gets written. `k_timer_init` is likewise unexported, so a userspace
-  ext can allocate a timer but not initialise it. Both need an app-side
-  `__syscall` shim or upstream exports.
+  much Zig gets written. They need an app-side `__syscall` shim or upstream
+  exports.
+- **Timers cannot be initialised, so none of them is usable.** Eight of the
+  nine calls *are* syscalls -- `start`, `stop`, `status_get`, `status_sync`,
+  `expires_ticks`, `remaining_ticks` and `user_data_get`/`set` -- and each
+  guards with `K_SYSCALL_OBJ`, so they work from userspace on an initialised
+  timer. `k_timer_status_sync` even blocks until expiry without a callback, so
+  a polled timer would be entirely usable. But `k_timer_init` is neither a
+  syscall nor exported, so there is no way to get one.
+
+  Unlike the pipe case this is deliberate, not an oversight: a timer's expiry
+  function runs in the system clock interrupt handler, so a syscall taking a
+  function pointer would let a userspace thread register code to run in an ISR.
+  There is nothing to fix upstream.
+
+  Three ways out, none of them free, and all of them the application's call
+  rather than this layer's: export `k_timer_init` and accept that timers are
+  kernel-extension only; define an application `__syscall` that initialises
+  with no callbacks, which is safe by construction and works in both contexts;
+  or propose a callback-less init syscall upstream. Whichever, the export check
+  turns a wrong guess into a build error naming the symbol.
 - **Pipes cannot be created from userspace.** `z_vrfy_k_pipe_init` guards
   itself with `K_SYSCALL_OBJ`, which requires the object to be initialised
   already, so initialising a fresh one is rejected. Every other init verifier
