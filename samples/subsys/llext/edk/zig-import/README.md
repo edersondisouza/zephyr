@@ -29,20 +29,31 @@ if (evt.wait(TICK, .{ .timeout = .ms(100) })) |matched| {
 | semaphores | `z.Semaphore` | `alloc` for userspace, `init` over your own storage |
 | events | `z.Event` | `wait` returns `?u32`; consuming by default |
 | threads | `z.Thread`, `z.sleep`, `z.yield` | `spawn` takes a Zig function and its arguments |
+| mutexes | `z.Mutex` | recursive, unlike `std.Thread.Mutex` |
+| condition variables | `z.Condvar` | `broadcast` returns a count, not a status |
+| queues | `z.Queue(T)` | holds `*T`; append or prepend, both take from the head |
+| message queues | `z.MessageQueue(T)` | copies `T` in and out; size comes from the type |
 | GPIO | `z.gpio.Pin`, `z.gpio.Port` | `Flags` is a packed struct; interrupts are an enum |
 | timeouts | `z.Timeout` | `.ms(100)`, `.seconds(1)`, `.forever`, `.no_wait` |
+| uptime | `z.uptime`, `z.uptimeTicks` | milliseconds is unsigned; see the note in `api/clock.zig` |
 | devicetree | `z.dt` | `alias`, `device`, phandle and cell access |
 
-That is **49 of the 120** syscalls this build can reach. Everything else is
-callable as `zephyr.uncurated.*` — ABI-correct, C-shaped, and reported by
-`gen/check.sh` as curation still to do. The application's own API is a separate
-module, `app` (see below).
+Everything else is callable as `zephyr.uncurated.*` — ABI-correct, C-shaped,
+and reported by `gen/check.sh` as curation still to do. The application's own
+API is a separate module, `app` (see below).
 
-The larger areas still uncurated, by syscall count: message queues (10), the
-rest of threads (9), timers (8), queues (8), poll (5), pipes (5), condvars (4),
-device (4), stacks (3), mutexes (3). Read *Known gaps* before starting on
-timers or work queues — some of that surface is not reachable from a userspace
-extension at all.
+`gen/check.sh` prints how much of the surface that adds up to on every build,
+which is why no number is written down here; it would only ever be right on the
+day it was typed. What is left, by syscall count:
+
+```sh
+comm -23 generated/.syscalls.txt generated/.curated.txt
+```
+
+The larger groups at the time of writing are the rest of threads (9), timers
+(8), poll (5) and pipes (5). Read *Known gaps* before starting on timers or
+work queues — some of that surface is not reachable from a userspace extension
+at all.
 
 That example is `probe/readme.zig`, and it is compiled — a documented example
 nobody builds rots.
@@ -166,9 +177,11 @@ That one constraint pays for the whole design:
    stubs and re-emits them as Zig. Signatures are lifted verbatim from
    `cimport.zig`, so no C-to-Zig type mapping happens and the types cannot drift
    from what the rest of the translated header believes.
-2. **Curate an area.** Take the raw wrappers plus their doxygen — 116 of the 120
+2. **Curate an area.** Take the raw wrappers plus their doxygen — 116 of the 117
    reachable syscalls carry a doc block, with `@param` semantics and `@retval`
-   sets — and turn them into a Zig API. This is where taste goes.
+   sets — and turn them into a Zig API. This is where taste goes. Add a row to
+   the table above while you are there; it is the one part of this file that
+   goes stale on its own.
 3. **`probe/<area>.zig`** — every curated entry point called once. Its job is to
    let `check.sh` prove the whole surface links against symbols the base image
    exports, and to pin down anything a type signature alone does not say:
@@ -243,12 +256,15 @@ is which.
 Deliberately left for the curation step, because guessing produces a plausible
 API that is wrong:
 
-- **`c_int` is not always an errno.** Of the 57 int-returning syscalls here, 45
+- **`c_int` is not always an errno.** Of the 54 int-returning syscalls here, 45
   document an `-Exxx` set and 37 of those return literal `0` on success. The
   rest need eyes: `k_pipe_read` and `k_pipe_write` return a byte count,
   `k_futex_wake` a thread count, and `k_sleep`, `k_usleep`,
-  `k_thread_priority_get`, `k_queue_is_empty`, `k_is_preempt_thread` and the
-  `k_condvar_*` family return something that is not a status at all.
+  `k_thread_priority_get`, `k_queue_is_empty`, `k_is_preempt_thread` and
+  `k_condvar_broadcast` return something that is not a status at all. Reading
+  the implementation is the only way to be sure: `k_msgq_alloc_init` documents
+  `0` and `-ENOMEM`, and also returns `-EINVAL` on an overflow the header never
+  mentions.
 - **`[*c]` carries no nullability or cardinality.** Kernel object pointers are
   reliably `*T`, but the buffer-and-length pairs (`k_pipe_read`,
   `k_thread_name_copy`, `k_stack_pop`) want a Zig slice, and pairing the
