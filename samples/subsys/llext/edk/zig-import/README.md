@@ -33,6 +33,7 @@ if (evt.wait(TICK, .{ .timeout = .ms(100) })) |matched| {
 | condition variables | `z.Condvar` | `broadcast` returns a count, not a status |
 | queues | `z.Queue(T)` | holds `*T`; append or prepend, both take from the head |
 | message queues | `z.MessageQueue(T)` | copies `T` in and out; size comes from the type |
+| pipes | `z.Pipe` | byte stream; `read`/`write` move *up to* what you asked. Kernel extensions only -- see *Known gaps* |
 | GPIO | `z.gpio.Pin`, `z.gpio.Port` | `Flags` is a packed struct; interrupts are an enum |
 | timeouts | `z.Timeout` | `.ms(100)`, `.seconds(1)`, `.forever`, `.no_wait` |
 | uptime | `z.uptime`, `z.uptimeTicks` | milliseconds is unsigned; see the note in `api/clock.zig` |
@@ -51,7 +52,7 @@ comm -23 generated/.syscalls.txt generated/.curated.txt
 ```
 
 The larger groups at the time of writing are the rest of threads (9), timers
-(8), poll (5) and pipes (5). Read *Known gaps* before starting on timers or
+(8), poll (5) and stacks (3). Read *Known gaps* before starting on timers or
 work queues — some of that surface is not reachable from a userspace extension
 at all.
 
@@ -286,6 +287,15 @@ API that is wrong:
   much Zig gets written. `k_timer_init` is likewise unexported, so a userspace
   ext can allocate a timer but not initialise it. Both need an app-side
   `__syscall` shim or upstream exports.
+- **Pipes cannot be created from userspace.** `z_vrfy_k_pipe_init` guards
+  itself with `K_SYSCALL_OBJ`, which requires the object to be initialised
+  already, so initialising a fresh one is rejected. Every other init verifier
+  uses `K_SYSCALL_OBJ_INIT` (any state) or `K_SYSCALL_OBJ_NEVER_INIT` (must be
+  fresh) -- pipe is the only one asking for the state its own call exists to
+  produce. It works for a statically defined pipe, which a dynamically loaded
+  userspace extension cannot have. Looks like a Zephyr bug rather than a
+  design decision; `Pipe.alloc` returns `UserspaceUnsupported` rather than
+  letting the oops halt the board.
 - **Callbacks** are the one structural limit. `gpio_add_callback` is not a
   syscall and dereferences `dev->api`, so interrupt-with-callback GPIO is
   kernel-extension only. A userspace extension polls, or waits on an event the
