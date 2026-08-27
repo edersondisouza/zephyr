@@ -438,6 +438,71 @@ fn testMessageQueue() c_int {
     return 0;
 }
 
+// ---- pipes -----------------------------------------------------------------
+
+var pipe_ring: [8]u8 = undefined;
+
+fn testPipe() c_int {
+    // k_pipe_init cannot be reached from userspace at all -- see the note in
+    // api/pipe.zig. The API says so rather than letting the board halt, and
+    // there is nothing to test here in that context.
+    if (z.isUserContext()) return app.skipped;
+
+    const p = z.Pipe.alloc(&pipe_ring) catch return 1;
+    var scratch: [16]u8 = undefined;
+
+    // Nothing buffered, and not willing to wait: no byte moved at all, which
+    // is the one case that is an error rather than a short transfer.
+    if (p.read(&scratch, .no_wait)) |_| {
+        return 2;
+    } else |err| switch (err) {
+        error.TimedOut => {},
+        error.Cancelled, error.Closed, error.Unexpected => return 3,
+    }
+
+    if ((p.write("abcd", .no_wait) catch return 4) != 4) return 5;
+
+    // Reading into a bigger buffer gives back only what was there.
+    const got = p.read(&scratch, .no_wait) catch return 6;
+    if (got.len != 4) return 7;
+    if (got[0] != 'a' or got[3] != 'd') return 8;
+
+    // The ring holds eight bytes, so a twelve-byte write that will not wait
+    // takes eight and says so. A short count is success.
+    if ((p.write("0123456789ab", .no_wait) catch return 9) != 8) return 10;
+
+    const drained = p.read(&scratch, .no_wait) catch return 11;
+    if (drained.len != 8) return 12;
+    if (drained[0] != '0' or drained[7] != '7') return 13;
+
+    // A timed read on an empty pipe waits before reporting that nothing moved.
+    const before = z.uptime();
+    if (p.read(&scratch, .ms(30))) |_| {
+        return 14;
+    } else |err| switch (err) {
+        error.TimedOut => {},
+        error.Cancelled, error.Closed, error.Unexpected => return 15,
+    }
+    if (z.uptime() - before < 25) return 16;
+
+    // Closing is reported as itself, not as a timeout.
+    p.close();
+    if (p.write("x", .no_wait)) |_| {
+        return 17;
+    } else |err| switch (err) {
+        error.Closed => {},
+        error.TimedOut, error.Cancelled, error.Unexpected => return 18,
+    }
+    if (p.read(&scratch, .no_wait)) |_| {
+        return 19;
+    } else |err| switch (err) {
+        error.Closed => {},
+        error.TimedOut, error.Cancelled, error.Unexpected => return 20,
+    }
+
+    return 0;
+}
+
 // ---- entry -----------------------------------------------------------------
 
 pub fn start() callconv(.c) c_int {
@@ -449,6 +514,7 @@ pub fn start() callconv(.c) c_int {
     app.report(.mutex, testMutex());
     app.report(.condvar, testCondvar());
     app.report(.msgq, testMessageQueue());
+    app.report(.pipe, testPipe());
     return 0;
 }
 

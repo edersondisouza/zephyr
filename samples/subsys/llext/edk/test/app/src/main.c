@@ -167,6 +167,11 @@ static void check(enum test_context context, enum test_area area)
 		   "the extension did not run; see extensions_load");
 	zassert_true(seen, "extension never reported this area -- it most "
 			   "likely faulted before getting there");
+
+	if (result == TEST_SKIPPED) {
+		ztest_test_skip();
+	}
+
 	zassert_equal(result, 0, "check %d failed", result);
 }
 
@@ -199,3 +204,4 @@ AREA_TEST(queue, TEST_QUEUE)
 AREA_TEST(mutex, TEST_MUTEX)
 AREA_TEST(condvar, TEST_CONDVAR)
 AREA_TEST(msgq, TEST_MSGQ)
+AREA_TEST(pipe, TEST_PIPE)

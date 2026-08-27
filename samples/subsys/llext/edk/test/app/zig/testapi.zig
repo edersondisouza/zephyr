@@ -20,10 +20,15 @@ pub const Area = enum(c.enum_test_area) {
     mutex = c.TEST_MUTEX,
     condvar = c.TEST_CONDVAR,
     msgq = c.TEST_MSGQ,
+    pipe = c.TEST_PIPE,
 };
 
-/// Report the outcome of one area: zero if it passed, otherwise the number of
-/// the check that failed.
+/// Return this from an area that cannot run in the current context. It has
+/// not failed, and the application marks the case skipped.
+pub const skipped: c_int = c.TEST_SKIPPED;
+
+/// Report the outcome of one area: zero if it passed, `skipped` if it does not
+/// apply here, otherwise the number of the check that failed.
 pub fn report(area: Area, result: c_int) void {
     syscall.report(@intFromEnum(area), result);
 }
