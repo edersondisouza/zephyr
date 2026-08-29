@@ -22,6 +22,7 @@ pub const Area = enum(c.enum_test_area) {
     msgq = c.TEST_MSGQ,
     pipe = c.TEST_PIPE,
     stack = c.TEST_STACK,
+    futex = c.TEST_FUTEX,
 };
 
 /// Return this from an area that cannot run in the current context. It has

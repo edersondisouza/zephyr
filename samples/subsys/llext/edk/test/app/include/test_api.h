@@ -27,6 +27,7 @@ extern "C" {
 		TEST_MSGQ,
 		TEST_PIPE,
 		TEST_STACK,
+		TEST_FUTEX,
 		TEST_AREA_COUNT
 	};
 

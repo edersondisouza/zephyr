@@ -561,6 +561,54 @@ fn testStack() c_int {
     return 0;
 }
 
+// ---- futexes ---------------------------------------------------------------
+
+var futex_storage: c.k_futex = undefined;
+
+fn testFutex() c_int {
+    // The extension's own storage. There is no allocating constructor and
+    // cannot be: k_object_alloc refuses K_OBJ_FUTEX outright, because a futex
+    // lives in user memory and one taken from the kernel heap would not.
+    const f = z.Futex.at(&futex_storage);
+
+    // Everything below the syscall boundary works on it, which is the whole
+    // fast path of a futex.
+    f.store(0);
+    if (f.load() != 0) return 1;
+    if (f.fetchAdd(5) != 0) return 2;
+    if (f.load() != 5) return 3;
+
+    // compareExchange reports the value that was actually there when it
+    // fails, which is why it returns an optional rather than a bool.
+    if (f.compareExchange(5, 6) != null) return 4;
+    if (f.load() != 6) return 5;
+    if (f.compareExchange(5, 7)) |actual| {
+        if (actual != 6) return 6;
+    } else return 7;
+    if (f.load() != 6) return 8;
+
+    // Blocking is the part an extension cannot have. The registration comes
+    // from gen_kobject_list.py scanning statically declared futexes at build
+    // time, and a loaded extension has none, so the kernel does not know this
+    // address. Checked rather than assumed: if a future Zephyr grows a way to
+    // register one at run time, this is what notices.
+    if (f.wake(true)) |_| {
+        return 9;
+    } else |err| switch (err) {
+        error.NotRegistered => {},
+        error.AccessDenied, error.Unexpected => return 10,
+    }
+
+    if (f.wait(f.load(), .no_wait)) |_| {
+        return 11;
+    } else |err| switch (err) {
+        error.NotRegistered => {},
+        error.Changed, error.TimedOut, error.AccessDenied, error.Unexpected => return 12,
+    }
+
+    return 0;
+}
+
 // ---- entry -----------------------------------------------------------------
 
 pub fn start() callconv(.c) c_int {
@@ -574,6 +622,7 @@ pub fn start() callconv(.c) c_int {
     app.report(.msgq, testMessageQueue());
     app.report(.pipe, testPipe());
     app.report(.stack, testStack());
+    app.report(.futex, testFutex());
     return 0;
 }
 
