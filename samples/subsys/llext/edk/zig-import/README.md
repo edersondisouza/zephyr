@@ -56,12 +56,13 @@ day it was typed. What is left, by syscall count:
 comm -23 generated/.syscalls.txt generated/.curated.txt
 ```
 
-Read *Known gaps* before starting on any of it. Of the 35 remaining at the time
-of writing, most are blocked rather than waiting: timers (8), poll (5) and all
-but a handful of the threads (9) have an entry there explaining why. Some of
+Read *Known gaps* before starting on any of it. All 35 remaining at the time of
+writing have an entry there, and most are blocked rather than waiting: some of
 that surface is not reachable from a userspace extension, and some is not
-reachable from either kind. What is genuinely unexplored is `device` (4),
-`sys_clock` (3) and `k_object` (2).
+reachable from either kind. What is worth doing comes to `sys_clock` (3), which
+needs a one-line change to `imports.h` before it is possible at all, plus
+`device_get_binding` and `k_object_access_grant` — the last two entries say
+why, and why the six calls beside them are not worth shipping.
 
 **Maintaining the bindings?** The rest of this file is for you.
 
@@ -385,6 +386,48 @@ API that is wrong:
   mirror the struct and `_Static_assert` its size and offsets against the real
   one, turning a layout change into a build error. That would be the first
   hand-written C in the pipeline, which is why it has not been done.
+- **`struct timespec` is opaque too, but for a reason worth telling apart from
+  `k_poll_event`'s.** All three `sys_clock_*` syscalls take or return one, and
+  translate-c emits `opaque {}` for it, so none of them is usable as things
+  stand. The cause is not that the type resists translation: `sys/clock.h`
+  forward-declares `struct timespec;` at line 386 and never includes
+  `<time.h>`, so it is merely *incomplete* in this translation unit. The
+  definition it is missing lives in picolibc's `sys/_timespec.h`.
+
+  Adding `#include <time.h>` to `imports.h` is the whole fix. Measured: the
+  type becomes `extern struct { tv_sec: time_t, tv_nsec: c_long }` and the four
+  signatures become usable pointers, at a cost of +65 declarations and -10.
+  Eight of the ten are anonymous-struct renumbering (`struct_z_heap_3` becomes
+  `_4`) or macro-translation churn -- which macros survive shifts when the
+  token stream changes, and here three `DT_N_*` fall out while five appear.
+  `struct_sigevent` arrives new and opaque, and nothing referenced it before.
+  Nothing curated references anything lost. It has not been done only because
+  it should land with the curation that needs it, not on its own.
+
+  `sys_clock_gettime` is neither a syscall nor exported, but its body is
+  `uptime_ticks` plus the realtime offset, and this layer has both -- so a
+  curated `realtime()` is reconstructible and the area is self-contained once
+  the include is there.
+- **What is left of `device` and `k_object` is mostly not worth curating.**
+  Both groups are healthy -- eight of their nine calls have a real
+  implementation and a real marshaller in both contexts, which after threads is
+  worth saying out loud -- but healthy is not the same as useful.
+
+  `device_get_binding(name)` is the one to take: its verifier copies the string
+  into a bounded buffer and returns NULL for unknown-or-not-ready, so it maps
+  to `?*const device` and gives the runtime complement to comptime
+  `z.dt.device()`. `k_object_access_grant` is the other: it is how an extension
+  shares an object with a thread it spawned, and it pairs with the already
+  curated `k_object_release`.
+
+  The rest have reasons not to. `device_init` returns `-EALREADY` for anything
+  already brought up, which is nearly everything an extension can reach.
+  `device_deinit` returns `-ENOTSUP` outright without
+  `CONFIG_DEVICE_DEINIT_SUPPORT`. `device_get_by_dt_nodelabel` is a null export
+  of the kind described above, wanting `CONFIG_DEVICE_DT_METADATA`.
+  `k_object_alloc_size` exists for thread stacks by its own doxygen, and
+  `Thread.spawn` already goes through `k_thread_stack_alloc`, so it has no
+  caller here.
 - **Callbacks** are the one structural limit. `gpio_add_callback` is not a
   syscall and dereferences `dev->api`, so interrupt-with-callback GPIO is
   kernel-extension only. A userspace extension polls, or waits on an event the
