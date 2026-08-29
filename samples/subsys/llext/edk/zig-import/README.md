@@ -314,6 +314,25 @@ API that is wrong:
   userspace extension cannot have. Looks like a Zephyr bug rather than a
   design decision; `Pipe.alloc` returns `UserspaceUnsupported` rather than
   letting the oops halt the board.
+- **`k_poll` cannot be reached, because its event type does not translate.**
+  `struct k_poll_event` is five bitfields and an anonymous union, and
+  translate-c emits `pub const struct_k_poll_event = opaque {}`. An opaque has
+  no size, so an extension cannot declare storage for one, let alone read the
+  `state` field back after polling. `k_poll_event_init`, the one way to fill
+  one without touching the fields, is declared but not exported.
+
+  This is a different kind of blocker from the others here: not permissions,
+  not a design decision, not a missing export, but a type that does not survive
+  the C-to-Zig step. The four `k_poll_signal_*` calls are unaffected --
+  `struct k_poll_signal` has no bitfields and translates cleanly -- but a
+  signal exists to be polled on, so they are left with the rest.
+
+  It is fixable without upstream help, and the pieces are all present:
+  `_POLL_NUM_TYPES` and `_POLL_NUM_STATES` survive, so the bit widths can be
+  derived rather than guessed, and a shim header in the generation input could
+  mirror the struct and `_Static_assert` its size and offsets against the real
+  one, turning a layout change into a build error. That would be the first
+  hand-written C in the pipeline, which is why it has not been done.
 - **Callbacks** are the one structural limit. `gpio_add_callback` is not a
   syscall and dereferences `dev->api`, so interrupt-with-callback GPIO is
   kernel-extension only. A userspace extension polls, or waits on an event the
