@@ -503,6 +503,64 @@ fn testPipe() c_int {
     return 0;
 }
 
+// ---- stacks ----------------------------------------------------------------
+
+var stack_item: Item = .{ .value = 42 };
+
+fn testStack() c_int {
+    // Caught here rather than in the kernel: z_vrfy_k_stack_alloc_init guards
+    // both argument checks with K_OOPS, so from userspace a zero capacity
+    // halts the board instead of returning.
+    if (z.Stack(u32).alloc(0)) |_| {
+        return 1;
+    } else |err| switch (err) {
+        error.ZeroCapacity => {},
+        error.OutOfMemory, error.TooLarge => return 2,
+    }
+
+    const s = z.Stack(u32).alloc(3) catch return 3;
+
+    if (s.pop(.no_wait)) |_| {
+        return 4;
+    } else |err| switch (err) {
+        error.WouldBlock => {},
+        error.TimedOut, error.Unexpected => return 5,
+    }
+
+    s.push(10) catch return 6;
+    s.push(20) catch return 7;
+    s.push(30) catch return 8;
+
+    if (s.push(40)) |_| {
+        return 9;
+    } else |err| switch (err) {
+        error.Full => {},
+    }
+
+    // Last in, first out -- the whole difference from Queue.
+    if ((s.pop(.no_wait) catch return 10) != 30) return 11;
+    if ((s.pop(.no_wait) catch return 12) != 20) return 13;
+    if ((s.pop(.no_wait) catch return 14) != 10) return 15;
+
+    const before = z.uptime();
+    if (s.pop(.ms(30))) |_| {
+        return 16;
+    } else |err| switch (err) {
+        error.TimedOut => {},
+        error.WouldBlock, error.Unexpected => return 17,
+    }
+    if (z.uptime() - before < 25) return 18;
+
+    // A stack of pointers: what goes in comes back as the type it went in as,
+    // with no cast at the call site.
+    const pointers = z.Stack(*Item).alloc(2) catch return 19;
+    pointers.push(&stack_item) catch return 20;
+    const back: *Item = pointers.pop(.no_wait) catch return 21;
+    if (back.value != 42) return 22;
+
+    return 0;
+}
+
 // ---- entry -----------------------------------------------------------------
 
 pub fn start() callconv(.c) c_int {
@@ -515,6 +573,7 @@ pub fn start() callconv(.c) c_int {
     app.report(.condvar, testCondvar());
     app.report(.msgq, testMessageQueue());
     app.report(.pipe, testPipe());
+    app.report(.stack, testStack());
     return 0;
 }
 

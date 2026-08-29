@@ -26,6 +26,7 @@ extern "C" {
 		TEST_CONDVAR,
 		TEST_MSGQ,
 		TEST_PIPE,
+		TEST_STACK,
 		TEST_AREA_COUNT
 	};
 
