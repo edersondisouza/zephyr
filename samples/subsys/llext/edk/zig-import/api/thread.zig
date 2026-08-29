@@ -15,6 +15,7 @@ const syscall = @import("../generated/syscalls.zig");
 const p = @import("../gen/prelude.zig");
 const errno = @import("errno.zig");
 const Timeout = @import("timeout.zig").Timeout;
+const word = @import("word.zig");
 
 // ---- operations on the calling thread --------------------------------------
 
@@ -156,7 +157,7 @@ pub const Thread = struct {
                 const slots = [3]?*anyopaque{ s0, s1, s2 };
                 var unpacked: std.meta.ArgsTuple(@TypeOf(entry)) = undefined;
                 inline for (0..params.len) |i| {
-                    unpacked[i] = fromSlot(params[i].type.?, slots[i]);
+                    unpacked[i] = word.unpack(params[i].type.?, @intFromPtr(slots[i]));
                 }
                 @call(.auto, entry, unpacked);
             }
@@ -164,37 +165,9 @@ pub const Thread = struct {
 
         var slots: [3]?*anyopaque = .{ null, null, null };
         inline for (0..params.len) |i| {
-            slots[i] = toSlot(args[i]);
+            slots[i] = @ptrFromInt(word.pack(args[i]));
         }
         return spawnRaw(trampoline.call, slots, opts);
-    }
-
-    /// Pack one entry-point argument into a `void *` slot, the way the C
-    /// caller would have cast it.
-    fn toSlot(value: anytype) ?*anyopaque {
-        const T = @TypeOf(value);
-        return switch (@typeInfo(T)) {
-            .pointer => @ptrCast(@constCast(value)),
-            .optional => if (value) |v| @ptrCast(@constCast(v)) else null,
-            .int, .comptime_int => @ptrFromInt(@as(usize, @intCast(value))),
-            .@"enum" => @ptrFromInt(@as(usize, @intCast(@intFromEnum(value)))),
-            .bool => @ptrFromInt(@intFromBool(value)),
-            .void => null,
-            else => @compileError("a thread argument must fit in a pointer slot, " ++
-                "and " ++ @typeName(T) ++ " does not; pass a pointer to it instead"),
-        };
-    }
-
-    fn fromSlot(comptime T: type, slot: ?*anyopaque) T {
-        return switch (@typeInfo(T)) {
-            .pointer => @ptrCast(@alignCast(slot.?)),
-            .optional => if (slot) |s| @ptrCast(@alignCast(s)) else null,
-            .int => @intCast(@intFromPtr(slot)),
-            .@"enum" => @enumFromInt(@intFromPtr(slot)),
-            .bool => @intFromPtr(slot) != 0,
-            .void => {},
-            else => @compileError("unsupported thread argument type " ++ @typeName(T)),
-        };
     }
 
     /// Spawn a thread using Zephyr's three-argument entry signature, for the
