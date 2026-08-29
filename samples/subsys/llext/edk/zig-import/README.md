@@ -197,8 +197,16 @@ That one constraint pays for the whole design:
    report, coverage.
 5. **`gen/check_exports.sh`** — after the application is linked, that every
    symbol the extension relocates against is in the application's export
-   table. An extension references more than syscalls, and nothing else catches
-   a missing compiler runtime helper before `llext_load()` does, on the target.
+   table *and resolves to a real address*. An extension references more than
+   syscalls, and nothing else catches a missing compiler runtime helper before
+   `llext_load()` does, on the target. The address half matters because a
+   syscall whose implementation is compiled out is still exported, as a weak
+   alias to a discarded `no_syscall_impl` — 73 of this application's 219
+   entries are such placeholders. `llext_link.c` treats a zero address as
+   not-found, so a name-only check would pass a build that dies on the target
+   with `cannot find idx N name z_impl_...`. The two failures are reported
+   apart: one wants an `EXPORT_SYMBOL`, the other wants the `CONFIG` that
+   compiles the implementation in.
 
 An application with its own `__syscall` declarations gets all of this for free:
 the sample's `publish` lands in the generated stubs alongside `k_sem_take`, so

@@ -15,6 +15,22 @@
 # This needs the linked application, so it runs after the application build
 # rather than after the extension build. Symbols are read from EXPORT_SYMBOL's
 # own bookkeeping: each export leaves a __llext_sym_<name> symbol behind.
+#
+# Being named in the table is not the same as being callable. A syscall whose
+# impl is compiled out still gets an entry, because gen_syscalls.py emits
+#
+#     extern __weak ALIAS_OF(no_syscall_impl) void * const z_impl_<name>;
+#
+# and no_syscall_impl lives in a section that is discarded, so the entry
+# resolves to address 0. llext_link.c treats a zero address as not-found and
+# refuses to load -- so a name-only check passes a build that then dies on the
+# target with "cannot find idx N name z_impl_<name>". An export therefore
+# counts here only if the symbol it points at has a nonzero address, which is
+# the same test llext itself applies.
+#
+# A dead export is reported separately, because the fix is different: the
+# symbol is already exported, and what is missing is the CONFIG that would
+# compile its implementation in.
 
 set -uo pipefail
 
@@ -34,9 +50,34 @@ if [ -z "$NM" ] || [ -z "$READELF" ]; then
 fi
 
 exported="$(mktemp)"
-trap 'rm -f "$exported"' EXIT
-"$NM" "$ELF" | grep -oP '__llext_sym_\K\w+' | sort -u > "$exported"
-echo "==> $(wc -l < "$exported") symbols exported by $(basename "$ELF")"
+dead="$(mktemp)"
+nmout="$(mktemp)"
+trap 'rm -f "$exported" "$dead" "$nmout"' EXIT
+
+"$NM" "$ELF" > "$nmout"
+
+# Pass one collects the exported names, pass two looks each one up. A name
+# defined more than once counts as live if any definition is real.
+awk '
+    FNR == NR {
+        if ($NF ~ /^__llext_sym_/) { want[substr($NF, 13)] = 1 }
+        next
+    }
+    NF == 3 && ($3 in want) {
+        if ($1 ~ /^0+$/) { dead[$3] = 1 } else { live[$3] = 1 }
+    }
+    END {
+        for (n in live) { print "live", n }
+        for (n in dead) { if (!(n in live)) print "dead", n }
+    }
+' "$nmout" "$nmout" > "$nmout.split"
+
+grep '^live ' "$nmout.split" | cut -d' ' -f2 | sort -u > "$exported"
+grep '^dead ' "$nmout.split" | cut -d' ' -f2 | sort -u > "$dead"
+rm -f "$nmout.split"
+
+echo "==> $(wc -l < "$exported") symbols exported by $(basename "$ELF")" \
+     "($(wc -l < "$dead") named but unimplemented)"
 
 rc=0
 for ext in "$@"; do
@@ -48,10 +89,23 @@ for ext in "$@"; do
     required="$(comm -12 <(echo "$needed") <(echo "$undefined"))"
     missing="$(comm -23 <(echo "$required") "$exported")"
 
+    # Split the two failures apart: one is missing an export, the other is
+    # missing the implementation behind an export that already exists.
+    unimplemented="$(comm -12 <(echo "$missing") "$dead")"
+    unexported="$(comm -23 <(echo "$missing") "$dead")"
+
     if [ -n "$missing" ]; then
-        echo "==> ERROR: $(basename "$ext") needs symbols the application does not export:" >&2
-        printf '      %s\n' $missing >&2
-        echo "    add EXPORT_SYMBOL for them, or stop calling what needs them" >&2
+        if [ -n "$unexported" ]; then
+            echo "==> ERROR: $(basename "$ext") needs symbols the application does not export:" >&2
+            printf '      %s\n' $unexported >&2
+            echo "    add EXPORT_SYMBOL for them, or stop calling what needs them" >&2
+        fi
+        if [ -n "$unimplemented" ]; then
+            echo "==> ERROR: $(basename "$ext") needs symbols exported with no implementation behind them:" >&2
+            printf '      %s\n' $unimplemented >&2
+            echo "    these resolve to address 0, which llext rejects at load time." >&2
+            echo "    enable the CONFIG that compiles them in, or stop calling what needs them" >&2
+        fi
         rc=1
     else
         echo "==> check: every symbol $(basename "$ext") needs is exported"
