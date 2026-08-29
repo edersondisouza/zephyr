@@ -10,10 +10,24 @@ once onto a userspace one. The curated code is identical either way, but a
 userspace extension reaches Zephyr through the `svc` marshalling in the
 generated layer while a kernel one calls `z_impl_*` directly.
 
-That difference is the point. Both binding bugs found so far -- `k_sem_take`
-dispatching to the give handler, `k_thread_create` passing the stack-alloc
-syscall id -- were in the marshalling, compiled cleanly, linked cleanly, and
-were invisible to anything short of running the userspace path.
+That difference is the point. Every binding bug found so far was in the
+marshalling, compiled cleanly, linked cleanly, and was invisible to anything
+short of running the userspace path. Two predate this set: `k_sem_take`
+dispatching to the give handler, and `k_thread_create` passing the stack-alloc
+syscall id. Two were caught by this set, on the board, once threads were
+curated:
+
+- `arch_syscall_invoke6` passed its sixth argument in `r12`, which Zephyr's own
+  trampoline lists as a clobber, so the kernel read whatever `r5` held. Six of
+  the seven arities were right; only the one nothing had exercised was wrong.
+  It surfaced as `Memory region 0xc (size 24) read access denied`.
+- A dynamically allocated stack is only registered as a kernel object when its
+  *own* flags carry `K_USER`, independently of the thread's. Passing them
+  separately let the two disagree, and the board answered `not a valid
+  z_thread_stack_element`. The flag is derived from the thread's now.
+
+Neither is the kind of mistake a type system can catch, which is the argument
+for keeping this set growing alongside the curated surface.
 
 The probes under `../zig-import/probe/` cover the other half: that every
 curated entry point compiles, links against symbols the base image exports,
@@ -58,7 +72,10 @@ The export check needs the linked application, so it comes after that build
 rather than after the extension build. It answers the question `check.sh`
 cannot: an extension references more than syscalls, and a compiler runtime
 helper the application does not export fails at `llext_load()` on the target
-with nothing to point at. `app/src/exports.c` is where those go.
+with nothing to point at. `app/src/exports.c` is where those go. It also
+rejects an export that resolves to address 0 -- a syscall left out by the
+configuration is still *named* in the table -- so that failure lands here too
+rather than at load time.
 
 Zephyr's own generated layer is shared with the showcase and is not rewritten
 by this build (`REGEN_ZEPHYR=0`); only this application's own syscall layer,
@@ -75,11 +92,14 @@ libc is not optional, even for an extension that calls none: TLS lives in that
 partition and `z_thread_entry` reads it before the extension runs at all.
 Dropping it gets an MPU fault on `__aeabi_read_tp` rather than a load failure.
 
-So the extension gets three, and `gen/llext-order.ld` folds `.bss` into
+So the extension gets three, and the board's own ordering script,
+`../zig-import/gen/boards/frdm_mcxn947_mcxn947_cpu0.ld`, folds `.bss` into
 `.data` to fit: text, rodata, data. That stores the zeroed data in the image
 instead of implying it, which is the right trade only while the zeroed data is
 small. An extension with a large `.bss` wants the opposite -- keep `.bss` and
-stay out of `.data`.
+stay out of `.data`, which is what the board-independent `gen/llext-order.ld`
+does. The board script is selected automatically by its name; nothing here
+asks for it.
 
 The application still adds the extension's own regions first and libc after,
 so if the budget is ever exceeded again the message says which one was lost

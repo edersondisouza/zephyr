@@ -22,8 +22,10 @@
  * exempts the first from the overlap rule, and the packaging step strips the
  * second.
  *
- * Nothing here is board-specific. If the board also runs short of MPU
- * partitions, see llext-order-fold-bss.ld.
+ * Nothing here is board-specific. A board that also runs short of MPU
+ * partitions puts a script named after itself in boards/, which common.sh
+ * selects in place of this one; boards/frdm_mcxn947_mcxn947_cpu0.ld is the
+ * worked example.
  */
 SECTIONS
 {

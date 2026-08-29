@@ -22,6 +22,9 @@ if (evt.wait(TICK, .{ .timeout = .ms(100) })) |matched| {
 }
 ```
 
+That example is `probe/readme.zig`, and it is compiled — a documented example
+nobody builds rots.
+
 ### What is curated
 
 | area | reached as | notes |
@@ -53,14 +56,12 @@ day it was typed. What is left, by syscall count:
 comm -23 generated/.syscalls.txt generated/.curated.txt
 ```
 
-The largest reachable group at the time of writing is the rest of threads (9),
-mostly introspection. Timers (8) and poll (5) are in *Known gaps* rather than
-waiting to be done. Read *Known gaps* before starting on timers or
-work queues — some of that surface is not reachable from a userspace extension
-at all.
-
-That example is `probe/readme.zig`, and it is compiled — a documented example
-nobody builds rots.
+Read *Known gaps* before starting on any of it. Of the 35 remaining at the time
+of writing, most are blocked rather than waiting: timers (8), poll (5) and all
+but a handful of the threads (9) have an entry there explaining why. Some of
+that surface is not reachable from a userspace extension, and some is not
+reachable from either kind. What is genuinely unexplored is `device` (4),
+`sys_clock` (3) and `k_object` (2).
 
 **Maintaining the bindings?** The rest of this file is for you.
 
@@ -106,6 +107,23 @@ never mix:
 
 ### The rule that holds it together
 
+**Curated code never marshals a syscall itself.** `gen/check.sh` fails the build
+if `arch_syscall_invoke` appears anywhere under `api/` or in the application's
+bindings.
+
+That one constraint pays for the whole design:
+
+- **Upstream ABI changes become compile errors.** Tier 0 is regenerated from the
+  EDK; if a syscall gains an argument or changes a type, the curated wrapper
+  stops type-checking. No fingerprints, no staleness heuristics, no manifest to
+  keep honest.
+- **Curation cannot introduce ABI bugs.** A curated wrapper only chooses types
+  and error names. It never touches a syscall id, so the class of bug that
+  motivated this work is structurally impossible above tier 0 — which is what
+  makes an LLM-assisted curation pass safe enough to be routine.
+- **Coverage is derived, not tracked.** Which syscalls are curated is answered
+  by grepping `api/` for `syscall.` references. Nothing to update by hand.
+
 ### One thing the build has to do to the object
 
 llext maps each region -- text, rodata, data -- as a single span from the
@@ -141,25 +159,6 @@ Folding lets an extension have text, rodata, data *and* bss within them, at the
 cost of storing the zeroed data in the image rather than implying it. That is
 the wrong trade for an extension with a large `.bss`, which wants the plain
 ordering and to stay out of `.data` instead.
-
-### The rule that holds it together
-
-**Curated code never marshals a syscall itself.** `gen/check.sh` fails the build
-if `arch_syscall_invoke` appears anywhere under `api/` or in the application's
-bindings.
-
-That one constraint pays for the whole design:
-
-- **Upstream ABI changes become compile errors.** Tier 0 is regenerated from the
-  EDK; if a syscall gains an argument or changes a type, the curated wrapper
-  stops type-checking. No fingerprints, no staleness heuristics, no manifest to
-  keep honest.
-- **Curation cannot introduce ABI bugs.** A curated wrapper only chooses types
-  and error names. It never touches a syscall id, so the class of bug that
-  motivated this work is structurally impossible above tier 0 — which is what
-  makes an LLM-assisted curation pass safe enough to be routine.
-- **Coverage is derived, not tracked.** Which syscalls are curated is answered
-  by grepping `api/` for `syscall.` references. Nothing to update by hand.
 
 ## The maintainer flow
 
@@ -284,6 +283,39 @@ API that is wrong:
 
 ## Known gaps
 
+- **An export can name a symbol that is not there.** A syscall whose
+  implementation is compiled out still gets an export-table entry, because
+  `gen_syscalls.py` emits a weak alias to `no_syscall_impl`, which lives in a
+  discarded section — so the entry resolves to address 0. Here that is 73 of
+  219 entries. Two quite different things land in that set: a `z_impl_` that is
+  `static inline` in a header, where the null entry is harmless because the
+  extension compiles its own copy and never relocates against it (`k_sem_count_get`
+  is one, and semaphores work fine); and a real function the build left out,
+  where the extension does relocate against it and `llext_link.c` rejects the
+  load. `check_exports.sh` tells the two apart by only counting an export whose
+  symbol has a nonzero address, so the second case fails the build now instead
+  of the load. Worth knowing before reading `nm` output and concluding a
+  syscall is available.
+- **Most of what is left of threads is compiled out, not uncurated.** Of the 13
+  thread-area calls remaining, 7 are null exports of the kind above:
+  `k_thread_deadline_set` and `_absolute_deadline_set` want `SCHED_DEADLINE`,
+  `k_thread_custom_data_get`/`_set` want `THREAD_CUSTOM_DATA`, and the three
+  `k_thread_runtime_stack_unused_threshold_*` want `THREAD_RUNTIME_STACK_SAFETY`.
+  All three Kconfigs are `default n`, so curating them means shipping an API
+  that fails to load unless the application opts in.
+
+  `k_thread_timeout_expires_ticks` and `_remaining_ticks` are the interesting
+  pair: their `z_impl_` is a header inline, so userspace reaches them by `svc`,
+  but the inline body calls `z_timeout_expires`/`z_timeout_remaining`, which are
+  real and *not* exported — so a kernel extension fails the export check. Two
+  `EXPORT_SYMBOL`s in the application would settle it.
+
+  That leaves `k_reschedule`, `k_float_enable`/`_disable` and `k_str_out`
+  working in both contexts. `k_float_*` returns `-ENOTSUP` outright without
+  `CONFIG_FPU_SHARING`, and `k_reschedule`'s own doxygen says most applications
+  will never use it. `k_str_out` is printk plumbing rather than a thread call,
+  and would belong to a console area — where it is arguably the most useful
+  thing on this list, being console output that does not pull in printf.
 - **A futex cannot be created by an extension, so only its atomics are
   usable.** `k_futex_wait` and `k_futex_wake` need the address registered as a
   `K_OBJ_FUTEX`, and that registration is emitted by `gen_kobject_list.py`
