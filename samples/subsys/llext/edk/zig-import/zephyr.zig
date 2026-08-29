@@ -23,6 +23,7 @@
 /// Curated APIs.
 pub const Condvar = @import("api/condvar.zig").Condvar;
 pub const Event = @import("api/event.zig").Event;
+pub const Futex = @import("api/futex.zig").Futex;
 pub const dt = @import("api/devicetree.zig");
 pub const gpio = @import("api/gpio.zig");
 pub const MessageQueue = @import("api/msgq.zig").MessageQueue;

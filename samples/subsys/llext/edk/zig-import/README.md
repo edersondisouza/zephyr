@@ -33,6 +33,7 @@ if (evt.wait(TICK, .{ .timeout = .ms(100) })) |matched| {
 | condition variables | `z.Condvar` | `broadcast` returns a count, not a status |
 | queues | `z.Queue(T)` | holds `*T`; append or prepend, both take from the head |
 | stacks | `z.Stack(T)` | last in, first out; `T` has to fit in a machine word |
+| futexes | `z.Futex` | the atomics; blocking needs a futex the build registered |
 | message queues | `z.MessageQueue(T)` | copies `T` in and out; size comes from the type |
 | pipes | `z.Pipe` | byte stream; `read`/`write` move *up to* what you asked. Kernel extensions only -- see *Known gaps* |
 | GPIO | `z.gpio.Pin`, `z.gpio.Port` | `Flags` is a packed struct; interrupts are an enum |
@@ -275,6 +276,15 @@ API that is wrong:
 
 ## Known gaps
 
+- **A futex cannot be created by an extension, so only its atomics are
+  usable.** `k_futex_wait` and `k_futex_wake` need the address registered as a
+  `K_OBJ_FUTEX`, and that registration is emitted by `gen_kobject_list.py`
+  scanning statically declared futexes at build time. A loaded extension has
+  none and cannot allocate one: `k_object_alloc` refuses the type, with
+  `/* Lives in user memory */` as the reason -- one taken from the kernel heap
+  would not be. The atomics need no registration and work on the extension's
+  own storage, so `z.Futex.at` gives the whole fast path; blocking waits for an
+  application to share a futex it declared.
 - **`atomic_*`** are syscall names, but in this build the in-scope definitions
   come from `atomic_builtin.h`, which translate-c also demotes. They want a
   hand-written shim over Zig's `@atomicRmw`, which is a better binding anyway.
