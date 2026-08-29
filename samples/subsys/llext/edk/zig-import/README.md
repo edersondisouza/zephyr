@@ -32,6 +32,7 @@ if (evt.wait(TICK, .{ .timeout = .ms(100) })) |matched| {
 | mutexes | `z.Mutex` | recursive, unlike `std.Thread.Mutex` |
 | condition variables | `z.Condvar` | `broadcast` returns a count, not a status |
 | queues | `z.Queue(T)` | holds `*T`; append or prepend, both take from the head |
+| stacks | `z.Stack(T)` | last in, first out; `T` has to fit in a machine word |
 | message queues | `z.MessageQueue(T)` | copies `T` in and out; size comes from the type |
 | pipes | `z.Pipe` | byte stream; `read`/`write` move *up to* what you asked. Kernel extensions only -- see *Known gaps* |
 | GPIO | `z.gpio.Pin`, `z.gpio.Port` | `Flags` is a packed struct; interrupts are an enum |
@@ -51,8 +52,9 @@ day it was typed. What is left, by syscall count:
 comm -23 generated/.syscalls.txt generated/.curated.txt
 ```
 
-The larger groups at the time of writing are the rest of threads (9), timers
-(8), poll (5) and stacks (3). Read *Known gaps* before starting on timers or
+The largest reachable group at the time of writing is the rest of threads (9),
+mostly introspection. Timers (8) and poll (5) are in *Known gaps* rather than
+waiting to be done. Read *Known gaps* before starting on timers or
 work queues — some of that surface is not reachable from a userspace extension
 at all.
 

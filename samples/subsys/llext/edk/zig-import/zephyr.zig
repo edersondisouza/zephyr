@@ -30,6 +30,7 @@ pub const Mutex = @import("api/mutex.zig").Mutex;
 pub const Pipe = @import("api/pipe.zig").Pipe;
 pub const Queue = @import("api/queue.zig").Queue;
 pub const Semaphore = @import("api/sem.zig").Semaphore;
+pub const Stack = @import("api/stack.zig").Stack;
 pub const Thread = @import("api/thread.zig").Thread;
 pub const Timeout = @import("api/timeout.zig").Timeout;
 
